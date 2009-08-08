@@ -419,7 +419,7 @@ int	Green_SDL_Main( Green_RTD *rtd )
 	}
 	
 	SDL_WM_SetCaption( "green - the PDF reader", NULL );
-	display = SDL_SetVideoMode( 0, 0, 0, SDL_HWSURFACE | SDL_ANYFORMAT | SDL_RESIZABLE );
+	display = SDL_SetVideoMode( 0, 0, 0, SDL_SWSURFACE | SDL_ANYFORMAT | SDL_RESIZABLE );
 	if (!display)
 	{
 		SDL_Quit();
