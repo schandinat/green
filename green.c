@@ -205,6 +205,28 @@ void	PrintVersion()
 	return;
 }
 
+double	ReadFraction( char *str )
+{
+	double	res;
+	long	tmp;
+	char	*str2;
+	
+	res = strtol( str, &str2, 10 );
+	if (!*str2)
+		return res;
+	
+	if (*str2 != '/')
+		return 0;
+	
+	str2++;
+	tmp = strtol( str2, &str2, 10 );
+	if (!tmp || *str2)
+		return 0;
+	
+	res /= tmp;
+	return res;
+}
+
 int	main( int argc, char *argv[] )
 {
 	Green_RTD	rtd;
@@ -250,6 +272,22 @@ int	main( int argc, char *argv[] )
 				rtd.fit_method = NATURAL;
 			else
 				err = -1;
+		}
+		else if (!strncmp( opt, "step=", 5 ))
+		{
+			opt += 5;
+			rtd.step = ReadFraction( opt );
+			if (rtd.step <= 0 || rtd.step > 1)
+				err = -1;
+		}
+		else if (!strncmp( opt, "zoomstep=", 9 ))
+		{
+			opt += 9;
+			rtd.zoomstep = ReadFraction( opt );
+			if (rtd.zoomstep <= 0)
+				err = -1;
+			
+			rtd.zoomstep += 1;
 		}
 		else if (!strncmp( opt, "cursor=", 7 ))
 		{
