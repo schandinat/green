@@ -378,12 +378,24 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event )
 	return state;
 }
 
+Uint32	mouse_timeout( Uint32 interval, void *param )
+{
+	SDL_Event	event;
+	
+	event.type = SDL_USEREVENT;
+	SDL_PushEvent( &event );
+	return interval;
+}
+
 int	Green_SDL_Main( Green_RTD *rtd )
 {
+	SDL_TimerID	timer = NULL;
 	SDL_Surface	*display;
 	SDL_Event	event;
 	RState	state = NORMAL;
 	IBuffer	input;
+	Uint32	mouse_last, mouse_cur;
+	Uint16	left_x, left_y, right_x, right_y;
 	char	*str;
 	long	tmp;
 	int	w, h;
@@ -409,6 +421,14 @@ int	Green_SDL_Main( Green_RTD *rtd )
 		fprintf( stderr, "Palettes are not supported!\n" );
                 return 3;
 	}
+	
+	if (rtd->mouse.visibility > 0)
+	{
+		timer = SDL_AddTimer( 100, mouse_timeout, NULL );
+		mouse_last = SDL_GetTicks();
+	}
+	else if (!rtd->mouse.visibility)
+		SDL_ShowCursor( SDL_DISABLE );
 	
 	Render( rtd );
 	do
@@ -520,9 +540,74 @@ int	Green_SDL_Main( Green_RTD *rtd )
 				
 				Render( rtd );
 				break;
+			case SDL_MOUSEMOTION:
+				if (rtd->mouse.visibility)
+				{
+					mouse_last = SDL_GetTicks();
+					SDL_ShowCursor( SDL_ENABLE );
+				}
+				
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+				if (rtd->mouse.visibility)
+				{
+					mouse_last = SDL_GetTicks();
+					SDL_ShowCursor( SDL_ENABLE );
+				}
+				
+				if (!(rtd->mouse.flags&0x01) || !Green_IsDocValid( rtd, rtd->doc_cur ))
+					break;
+				
+				switch (event.button.button)
+				{
+					case SDL_BUTTON_LEFT:
+						left_x = event.button.x;
+						left_y = event.button.y;
+						break;
+					case SDL_BUTTON_RIGHT:
+						right_x = event.button.x;
+						right_y = event.button.y;
+						break;
+					case SDL_BUTTON_WHEELDOWN:
+						Green_Zoom( rtd->docs[rtd->doc_cur], display->w, display->h, rtd->docs[rtd->doc_cur]->finescale * rtd->zoomstep );
+						Render( rtd );
+						break;
+					case SDL_BUTTON_WHEELUP:
+						Green_Zoom( rtd->docs[rtd->doc_cur], display->w, display->h, rtd->docs[rtd->doc_cur]->finescale / rtd->zoomstep );
+						Render( rtd );
+						break;
+				}
+				
+				break;
+			case SDL_MOUSEBUTTONUP:
+				if (rtd->mouse.visibility)
+				{
+					mouse_last = SDL_GetTicks();
+					SDL_ShowCursor( SDL_ENABLE );
+				}
+				
+				if (!(rtd->mouse.flags&0x01) || !Green_IsDocValid( rtd, rtd->doc_cur ))
+					break;
+				
+				if (event.button.button == SDL_BUTTON_RIGHT)
+				{
+					Green_ScrollRelative( rtd->docs[rtd->doc_cur], right_x - event.button.x, right_y - event.button.y, display->w, display->h );
+					Render( rtd );
+				}
+				
+				break;
+			case SDL_USEREVENT:
+				mouse_cur = SDL_GetTicks();
+				if (mouse_cur < mouse_last || mouse_cur - mouse_last > rtd->mouse.visibility * 100)
+					SDL_ShowCursor( SDL_DISABLE );
+				
+				break;
 		}
 		
 	}	while (state != QUIT);
+	
+	if (timer)
+		SDL_RemoveTimer( timer );
 	
 	SDL_Quit();
 	return 0;

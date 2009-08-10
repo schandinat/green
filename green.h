@@ -47,8 +47,18 @@ typedef struct
 	unsigned int	c_background, c_highlight;
 	Green_FitMethod	fit_method;
 	double	step, zoomstep;
-	int	cursor_config;
 	unsigned char	bb;
+	
+	struct
+	{
+		unsigned char	flags;
+			//	0x01:	react on mouse events?
+		int	visibility;
+			// -1: always visible
+			//  0: always invisible
+			// >0: timeout in 1/10 s
+		
+	}	mouse;
 	
 }	Green_RTD;
 

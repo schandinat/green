@@ -365,8 +365,9 @@ int	main( int argc, char *argv[] )
 	rtd.fit_method = NATURAL;
 	rtd.step = 1;
 	rtd.zoomstep = 1.1;
-	rtd.cursor_config = 1;
 	rtd.bb = 0x04;
+	rtd.mouse.flags = 1;
+	rtd.mouse.visibility = 5;
 	g_type_init();
 	for (i = 1; i < argc; i++)
 	{
