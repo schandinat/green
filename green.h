@@ -36,6 +36,7 @@ typedef struct
 	Green_FitMethod	fit_method;
 	double	finescale;
 	char	*search_str;
+	unsigned char	bb;
 	
 }	Green_Document;
 
@@ -47,6 +48,7 @@ typedef struct
 	Green_FitMethod	fit_method;
 	double	step, zoomstep;
 	int	cursor_config;
+	unsigned char	bb;
 	
 }	Green_RTD;
 
@@ -54,6 +56,7 @@ typedef struct
 int	Green_Open( Green_RTD *rtd, char *uri );
 void	Green_Close( Green_RTD *rtd, int id );
 double	Green_Fit( Green_Document *doc, int width, int height );
+void	Green_ScrollRelative( Green_Document *doc, int x, int y, int w, int h );
 void	Green_Zoom( Green_Document *doc, int width, int height, double new_fs );
 int	Green_FindNext( Green_Document *doc, int start );
 
@@ -76,27 +79,6 @@ void	Green_GetDimension( PopplerPage *page, int *w, int *h, double tscale )
 }
 
 inline static
-void	Green_GetScrollRegion( Green_Document *doc, int w, int h, int *scroll_w, int *scroll_h )
-{
-	PopplerPage	*page;
-	
-	page = poppler_document_get_page( doc->doc, doc->page_cur );
-	Green_GetDimension( page, scroll_w, scroll_h, Green_Fit( doc, w, h ) * doc->finescale );
-	g_object_unref( G_OBJECT( page ) );
-	if (*scroll_w < w)
-		*scroll_w = 0;
-	else	
-		*scroll_w -= w;
-	
-	if (*scroll_h < h)
-		*scroll_h = 0;
-	else	
-		*scroll_h -= h;
-	
-	return;
-}
-
-inline static
 void	Green_NextVaildDoc( Green_RTD *rtd )
 {
 	int i;
@@ -109,6 +91,18 @@ void	Green_NextVaildDoc( Green_RTD *rtd )
 		}
 	
 	return;
+}
+
+inline static
+int	Green_GotoPage( Green_Document *doc, int page )
+{
+	if (page < 0 || page >= doc->page_count)
+		return 0;
+	
+	doc->page_cur = page;
+	doc->xoffset = 0;
+	doc->yoffset = 0;
+	return 1;
 }
 
 

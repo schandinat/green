@@ -50,6 +50,27 @@ char*	Green_FilenameToURI( char *filename )
 	return uri;
 }
 
+inline static
+void	GetScrollRegion( Green_Document *doc, int w, int h, int *scroll_w, int *scroll_h )
+{
+	PopplerPage	*page;
+	
+	page = poppler_document_get_page( doc->doc, doc->page_cur );
+	Green_GetDimension( page, scroll_w, scroll_h, Green_Fit( doc, w, h ) * doc->finescale );
+	g_object_unref( G_OBJECT( page ) );
+	if (*scroll_w < w)
+		*scroll_w = 0;
+	else	
+		*scroll_w -= w;
+	
+	if (*scroll_h < h)
+		*scroll_h = 0;
+	else	
+		*scroll_h -= h;
+	
+	return;
+}
+
 int	Green_Open( Green_RTD *rtd, char *uri )
 {
 	Green_Document	**tmp, *doc = malloc( sizeof( *doc ) );
@@ -74,6 +95,7 @@ int	Green_Open( Green_RTD *rtd, char *uri )
 	doc->fit_method = rtd->fit_method;
 	doc->finescale = 1;
 	doc->search_str = NULL;
+	doc->bb = rtd->bb;
 	for (i = 0; i < rtd->doc_count; i++)
 	{
 		if (rtd->docs[i])
@@ -136,6 +158,108 @@ double	Green_Fit( Green_Document *doc, int w, int h )
 		return (w / pwidth <= h / pheight) ? w / pwidth : h / pheight;
 	
 	return 1;
+}
+
+void	Green_ScrollRelative( Green_Document *doc, int x, int y, int w, int h )
+{
+	unsigned char	bb_mode;
+	int	abs_x = x < 0 ? -x : x,
+		abs_y = y < 0 ? -y : y,
+		max_x, max_y;
+	
+	GetScrollRegion( doc, w, h, &max_x, &max_y );
+	if (abs_x > abs_y && x > 0 && doc->xoffset >= max_x)
+	{
+		if (!(doc->bb&0xF0) && (doc->bb&0x03))
+		{
+			bb_mode = doc->bb&0x03;
+			if (bb_mode == 1)
+				Green_GotoPage( doc, doc->page_cur + 1 );
+			else if (bb_mode == 2)
+				Green_GotoPage( doc, doc->page_cur - 1 );
+		}
+		
+		return;
+	}
+	else if (abs_x > abs_y && x < 0 && doc->xoffset <= 0)
+	{
+		if (!(doc->bb&0xF0) && (doc->bb&0x03))
+		{
+			bb_mode = doc->bb&0x03;
+			if (bb_mode == 1)
+			{
+				if (Green_GotoPage( doc, doc->page_cur - 1 ))
+				{
+					GetScrollRegion( doc, w, h, &max_x, &max_y );
+					doc->xoffset = max_x;
+				}
+			}
+			else if (bb_mode == 2)
+			{
+				if (Green_GotoPage( doc, doc->page_cur + 1 ))
+				{
+					GetScrollRegion( doc, w, h, &max_x, &max_y );
+					doc->xoffset = max_x;
+				}
+			}
+		}
+		
+		return;
+	}
+	else if (abs_x < abs_y && y > 0 && doc->yoffset >= max_y)
+	{
+		if (!(doc->bb&0xF0) && (doc->bb&0x0C))
+		{
+			bb_mode = (doc->bb>>2)&0x03;
+			if (bb_mode == 1)
+				Green_GotoPage( doc, doc->page_cur + 1 );
+			else if (bb_mode == 2)
+				Green_GotoPage( doc, doc->page_cur - 1 );
+		}
+		
+		return;
+	}
+	else if (abs_x < abs_y && y < 0 && doc->yoffset <= 0)
+	{
+		if (!(doc->bb&0xF0) && (doc->bb&0x0C))
+		{
+			bb_mode = (doc->bb>>2)&0x03;
+			if (bb_mode == 1)
+			{
+				if (Green_GotoPage( doc, doc->page_cur - 1 ))
+				{
+					GetScrollRegion( doc, w, h, &max_x, &max_y );
+					doc->yoffset = max_y;
+				}
+			}
+			else if (bb_mode == 2)
+			{
+				if (Green_GotoPage( doc, doc->page_cur + 1 ))
+				{
+					GetScrollRegion( doc, w, h, &max_x, &max_y );
+					doc->yoffset = max_y;
+				}
+			}
+		}
+		
+		return;
+	}
+	
+	if (x <= 0 && abs_x > doc->xoffset )
+		doc->xoffset = 0;
+	else if (x >= 0 && abs_x > max_x - doc->xoffset)
+		doc->xoffset = max_x;
+	else
+		doc->xoffset += x;
+	
+	if (y <= 0 && abs_y > doc->yoffset )
+		doc->yoffset = 0;
+	else if (y >= 0 && abs_y > max_y - doc->yoffset)
+		doc->yoffset = max_y;
+	else
+		doc->yoffset += y;
+	
+	return;
 }
 
 void	Green_Zoom( Green_Document *doc, int width, int height, double new_fs )
@@ -242,6 +366,7 @@ int	main( int argc, char *argv[] )
 	rtd.step = 1;
 	rtd.zoomstep = 1.1;
 	rtd.cursor_config = 1;
+	rtd.bb = 0x04;
 	g_type_init();
 	for (i = 1; i < argc; i++)
 	{

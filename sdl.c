@@ -290,64 +290,40 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event )
 			if (!doc)
 				break;
 			
-			if (display->h * rtd->step > doc->yoffset)
-				doc->yoffset = 0;
-			else
-				doc->yoffset -= display->h * rtd->step;
-			
+			Green_ScrollRelative( doc, 0, - display->h * rtd->step, display->w, display->h );
 			Render( rtd );
 			break;
 		case SDLK_DOWN:
 			if (!doc)
 				break;
 			
-			Green_GetScrollRegion( doc, display->w, display->h, &w, &h );
-			if (display->h * rtd->step > h - doc->yoffset)
-				doc->yoffset = h;
-			else
-				doc->yoffset += display->h * rtd->step;
-			
+			Green_ScrollRelative( doc, 0, display->h * rtd->step, display->w, display->h );
 			Render( rtd );
 			break;
 		case SDLK_LEFT:
 			if (!doc)
 				break;
 			
-			if (display->w * rtd->step > doc->xoffset)
-				doc->xoffset = 0;
-			else
-				doc->xoffset -= display->w * rtd->step;
-			
+			Green_ScrollRelative( doc, - display->w * rtd->step, 0, display->w, display->h );
 			Render( rtd );
 			break;
 		case SDLK_RIGHT:
 			if (!doc)
 				break;
 			
-			Green_GetScrollRegion( doc, display->w, display->h, &w, &h );
-			if (display->w * rtd->step > w - doc->xoffset)
-				doc->xoffset = w;
-			else
-				doc->xoffset += display->w * rtd->step;
-			
+			Green_ScrollRelative( doc, display->w * rtd->step, 0, display->w, display->h );
 			Render( rtd );
 			break;
 		case SDLK_PAGEUP:
-			if (!doc || !doc->page_cur)
+			if (!doc || !Green_GotoPage( doc, doc->page_cur - 1  ))
 				break;
 			
-			doc->page_cur--;
-			doc->xoffset = 0;
-			doc->yoffset = 0;
 			Render( rtd );
 			break;
 		case SDLK_PAGEDOWN:
-			if (!doc || doc->page_cur == doc->page_count - 1)
+			if (!doc || !Green_GotoPage( doc, doc->page_cur + 1  ))
 				break;
 			
-			doc->page_cur++;
-			doc->xoffset = 0;
-			doc->yoffset = 0;
 			Render( rtd );
 			break;
 		case '+':
@@ -540,14 +516,7 @@ int	Green_SDL_Main( Green_RTD *rtd )
 				}
 				
 				if (Green_IsDocValid( rtd, rtd->doc_cur ))
-				{
-					Green_GetScrollRegion( rtd->docs[rtd->doc_cur], display->w, display->h, &w, &h );
-					if (rtd->docs[rtd->doc_cur]->xoffset > w)
-						rtd->docs[rtd->doc_cur]->xoffset = w;
-					
-					if (rtd->docs[rtd->doc_cur]->yoffset > h)
-						rtd->docs[rtd->doc_cur]->yoffset = h;
-				}
+					Green_ScrollRelative( rtd->docs[rtd->doc_cur], 0, 0, display->w, display->h );
 				
 				Render( rtd );
 				break;
