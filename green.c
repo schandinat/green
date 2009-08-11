@@ -357,6 +357,9 @@ int	main( int argc, char *argv[] )
 	char	*opt;
 	int i, err = 0;
 	
+	rtd.flags = 0;
+	rtd.width = 0;
+	rtd.height = 0;	
 	rtd.docs = NULL;
 	rtd.doc_count = 0;
 	rtd.doc_cur = 0;
@@ -415,11 +418,22 @@ int	main( int argc, char *argv[] )
 			
 			rtd.zoomstep += 1;
 		}
-		else if (!strncmp( opt, "cursor=", 7 ))
+		else if (!strncmp( opt, "width=", 6 ))
+		{
+			opt += 6;
+			rtd.width = strtol( opt, &opt, 10 );
+			if (*opt)
+				err = -1;
+		}
+		else if (!strncmp( opt, "height=", 7 ))
 		{
 			opt += 7;
-			err = -1;
+			rtd.height = strtol( opt, &opt, 10 );
+			if (*opt)
+				err = -1;
 		}
+		else if (!strcmp( opt, "fullscreen" ))
+			rtd.flags |= GREEN_FULLSCREEN;
 		else
 			err = -1;
 		

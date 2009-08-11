@@ -21,6 +21,9 @@
 #include "glib/poppler.h"
 
 
+#define GREEN_FULLSCREEN	0x0001
+
+
 typedef enum
 {
 	NATURAL, WIDTH, HEIGHT, PAGE
@@ -42,6 +45,7 @@ typedef struct
 
 typedef struct
 {
+	unsigned short	flags, width, height;
 	Green_Document	**docs;
 	int	doc_count, doc_cur;
 	unsigned int	c_background, c_highlight;

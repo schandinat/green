@@ -407,7 +407,7 @@ int	Green_SDL_Main( Green_RTD *rtd )
 	}
 	
 	SDL_WM_SetCaption( "green - the PDF reader", NULL );
-	display = SDL_SetVideoMode( 0, 0, 0, SDL_SWSURFACE | SDL_ANYFORMAT | SDL_RESIZABLE );
+	display = SDL_SetVideoMode( rtd->width, rtd->height, 0, SDL_SWSURFACE | SDL_ANYFORMAT | SDL_RESIZABLE | (rtd->flags&GREEN_FULLSCREEN ? SDL_FULLSCREEN : 0) );
 	if (!display)
 	{
 		SDL_Quit();
