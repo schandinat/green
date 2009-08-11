@@ -1,7 +1,10 @@
-CC	:=	cc
-RM	:=	rm
+CFLAGS	:=	-Os
+
+CC	:=	cc $(CFLAGS)
+RM	:=	rm -f
 INSTALL	:=	install
 
+DESTDIR	:=	
 PREFIX	:=	/usr/local
 BINDIR	:=	$(PREFIX)/bin
 
@@ -17,7 +20,7 @@ clean:
 	$(RM) green green.o sdl.o
 
 install: green
-	$(INSTALL) green $(BINDIR)/
+	$(INSTALL) green $(DESTDIR)/$(BINDIR)/
 
 
 green: green.o sdl.o
