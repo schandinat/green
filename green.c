@@ -74,7 +74,6 @@ void	GetScrollRegion( Green_Document *doc, int w, int h, int *scroll_w, int *scr
 int	Green_Open( Green_RTD *rtd, char *uri )
 {
 	Green_Document	**tmp, *doc = malloc( sizeof( *doc ) );
-	PopplerPage	*page;
 	int	i;
 	
 	if (!doc)

@@ -104,6 +104,8 @@ void	GetInput( IBuffer *input, SDL_Event *event )
 			input->cur++;
 			input->used++;
 			break;
+		default:
+			break;
 	}
 	
 	return;
@@ -256,7 +258,7 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event )
 	Green_Document	*doc = NULL;
 	SDL_Surface	*display = SDL_GetVideoSurface();
 	RState	state = NORMAL;
-	int	w, h, f = 0;
+	int	f = 0;
 	
 	if (Green_IsDocValid( rtd, rtd->doc_cur ))
 		doc = rtd->docs[rtd->doc_cur];
@@ -373,6 +375,8 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event )
 			Green_NextVaildDoc( rtd );
 			Render( rtd );
 			break;
+		default:
+			break;
 	}
 	
 	return state;
@@ -394,11 +398,10 @@ int	Green_SDL_Main( Green_RTD *rtd )
 	SDL_Event	event;
 	RState	state = NORMAL;
 	IBuffer	input;
-	Uint32	mouse_last, mouse_cur;
-	Uint16	left_x, left_y, right_x, right_y;
+	Uint32	mouse_last = 0, mouse_cur;
+	Uint16	left_x = 0, left_y = 0, right_x = 0, right_y = 0;
 	char	*str;
 	long	tmp;
-	int	w, h;
 	
 	if (SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER ))
 	{
@@ -482,6 +485,8 @@ int	Green_SDL_Main( Green_RTD *rtd )
 							
 							rtd->docs[rtd->doc_cur]->page_cur = tmp;
 							Render( rtd );
+							break;
+						default:
 							break;
 					}
 					

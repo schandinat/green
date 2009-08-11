@@ -1,4 +1,4 @@
-CFLAGS	:=	-Os
+CFLAGS	:=	-Os -Wall
 
 CC	:=	cc $(CFLAGS)
 RM	:=	rm -f
