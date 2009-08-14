@@ -21,7 +21,7 @@
 #include "green.h"
 
 
-char*	Green_FilenameToURI( char *filename )
+char*	FilenameToURI( char *filename )
 {
 	const char	*prefix = "file:";
 	char	abs = filename[0] == '/',
@@ -76,14 +76,25 @@ int	Green_Open( Green_RTD *rtd, char *uri )
 	if (!doc)
 		return -1;
 	
-	doc->doc = poppler_document_new_from_file( uri, NULL, NULL );
+	if (!strncmp( uri, "file:", 5 ))
+		doc->uri = strdup( uri );
+	else
+		doc->uri = FilenameToURI( uri );
+	
+	if (!doc->uri)
+	{
+		free( doc );
+		return -1;
+	}
+	
+	doc->doc = poppler_document_new_from_file( doc->uri, NULL, NULL );
 	if (!doc->doc)
 	{
+		free( doc->uri );
 		free( doc );
 		return -2;
 	}
 	
-	doc->uri = uri;
 	doc->page_count = poppler_document_get_n_pages( doc->doc );
 	doc->page_cur = 0;
 	doc->xoffset = 0;
@@ -106,6 +117,7 @@ int	Green_Open( Green_RTD *rtd, char *uri )
 	if (!tmp)
 	{
 		g_object_unref( G_OBJECT( doc->doc ) );
+		free( doc->uri );
 		free( doc );
 		return -1;
 	}

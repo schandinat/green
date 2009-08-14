@@ -69,7 +69,6 @@ typedef struct
 
 int	Green_Open( Green_RTD *rtd, char *uri );
 void	Green_Close( Green_RTD *rtd, int id );
-char*	Green_FilenameToURI( char *filename );
 double	Green_Fit( Green_Document *doc, int width, int height );
 void	Green_ScrollRelative( Green_Document *doc, int x, int y, int w, int h );
 void	Green_Zoom( Green_Document *doc, int width, int height, double new_fs );

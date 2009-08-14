@@ -157,11 +157,9 @@ int	main( int argc, char *argv[] )
 		if (argv[i][0] == '-')
 			continue;
 		
-		opt = Green_FilenameToURI( argv[i] );
-		if (Green_Open( &rtd, opt ) < 0)
+		if (Green_Open( &rtd, argv[i] ) < 0)
 		{
-			fprintf( stderr, "Failed to open: %s\n", opt );
-			free( opt );
+			fprintf( stderr, "Failed to open: %s\n", argv[i] );
 			continue;
 		}
 	}
