@@ -1,6 +1,6 @@
 CFLAGS	:=	-Os -Wall
 
-CC	:=	cc $(CFLAGS)
+CC	:=	cc
 RM	:=	rm -f
 INSTALL	:=	install
 
@@ -17,17 +17,20 @@ SDL_LIBS	:=	$$(sdl-config --libs)
 all: green
 
 clean:
-	$(RM) green green.o sdl.o
+	$(RM) green main.o green.o sdl.o
 
 install: green
 	$(INSTALL) green $(DESTDIR)/$(BINDIR)/
 
 
-green: green.o sdl.o
+green: main.o green.o sdl.o
 	$(CC) $^ $(POPPLER_LIBS) $(SDL_LIBS) -o $@
 
+main.o: main.c green.h
+	$(CC) $(CFLAGS) -c $< $(POPPLER_CFLAGS) -o $@
+
 green.o: green.c green.h
-	$(CC) -c $< $(POPPLER_CFLAGS) -o $@
+	$(CC) $(CFLAGS) -c $< $(POPPLER_CFLAGS) -o $@
 
 sdl.o: sdl.c green.h
-	$(CC) -c $< $(POPPLER_CFLAGS) $(SDL_CFLAGS) -o $@
+	$(CC) $(CFLAGS) -c $< $(POPPLER_CFLAGS) $(SDL_CFLAGS) -o $@
