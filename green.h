@@ -60,7 +60,7 @@ typedef struct
 		int	visibility;
 			// -1: always visible
 			//  0: always invisible
-			// >0: timeout in 1/10 s
+			// >0: timeout in ms
 		
 	}	mouse;
 	

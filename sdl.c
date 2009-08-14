@@ -603,7 +603,7 @@ int	Green_SDL_Main( Green_RTD *rtd )
 				break;
 			case SDL_USEREVENT:
 				mouse_cur = SDL_GetTicks();
-				if (mouse_cur < mouse_last || mouse_cur - mouse_last > rtd->mouse.visibility * 100)
+				if (mouse_cur < mouse_last || mouse_cur - mouse_last > rtd->mouse.visibility)
 					SDL_ShowCursor( SDL_DISABLE );
 				
 				break;

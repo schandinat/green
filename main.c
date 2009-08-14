@@ -21,9 +21,11 @@
 #include "green.h"
 
 
-#define	SCHEME_WIDTH		1
-#define	SCHEME_HEIGHT		2
-#define	SCHEME_FULLSCREEN	3
+#define SCHEME_WIDTH			 1
+#define SCHEME_HEIGHT			 2
+#define SCHEME_FULLSCREEN		 3
+#define SCHEME_FIT			 4
+#define SCHEME_CURSORVISIBILITY		 5
 
 
 struct SchemeData
@@ -54,7 +56,9 @@ struct SchemeProperty	scheme_property[] =
 {
 	{"Width", SCHEME_WIDTH, 0},
 	{"Height", SCHEME_HEIGHT, 0},
-	{"Fullscreen", SCHEME_FULLSCREEN, 0}
+	{"Fullscreen", SCHEME_FULLSCREEN, 0},
+	{"Fit", SCHEME_FIT, 0},
+	{"Cursor.Visibility", SCHEME_CURSORVISIBILITY, 0}
 };
 
 
@@ -141,6 +145,31 @@ int	EvalProperty( Green_RTD *rtd, int id, char *arg )
 				rtd->flags |= GREEN_FULLSCREEN;
 			else if (!strcasecmp( arg, "no" ))
 				rtd->flags &= ~GREEN_FULLSCREEN;
+			else
+				res = -1;
+			
+			break;
+		case SCHEME_FIT:
+			if (!strcasecmp( arg, "none" ))
+				rtd->fit_method = NATURAL;
+			else if (!strcasecmp( arg, "width" ))
+				rtd->fit_method = WIDTH;
+			else if (!strcasecmp( arg, "height" ))
+				rtd->fit_method = HEIGHT;
+			else if (!strcasecmp( arg, "page" ))
+				rtd->fit_method = PAGE;
+			else
+				res = -1;
+			
+			break;
+		case SCHEME_CURSORVISIBILITY:
+			tmpl = strtol( arg, &tmpc, 10 );
+			if (tmpl > 0 && !*tmpc)
+				rtd->mouse.visibility = tmpl;
+			else if (!strcasecmp( arg, "visible" ))
+				rtd->mouse.visibility = -1;
+			else if (!strcasecmp( arg, "invisible" ))
+				rtd->mouse.visibility = 0;
 			else
 				res = -1;
 			
@@ -564,7 +593,7 @@ int	main( int argc, char *argv[] )
 	rtd.zoomstep = 1.1;
 	rtd.bb = 0x04;
 	rtd.mouse.flags = 1;
-	rtd.mouse.visibility = 5;
+	rtd.mouse.visibility = 500;
 	schemes.scheme = NULL;
 	schemes.n = 0;
 	g_type_init();
