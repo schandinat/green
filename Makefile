@@ -4,9 +4,12 @@ CC	:=	cc
 RM	:=	rm -f
 INSTALL	:=	install
 
-DESTDIR	:=	
-PREFIX	:=	/usr/local
-BINDIR	:=	$(PREFIX)/bin
+DESTDIR		:=	
+PREFIX		:=	/usr/local
+BINDIR		:=	$(PREFIX)/bin
+SYSCONFDIR	:=	$(PREFIX)/etc
+
+CONFIG	:=	-D GREEN_SYSCONFIG_FILE=\"$(SYSCONFDIR)/green.conf\" -D GREEN_USERCONFIG_FILE=\".green.conf\"
 
 POPPLER_CFLAGS	:=	$$(pkg-config poppler-glib --cflags)
 POPPLER_LIBS	:=	$$(pkg-config poppler-glib --libs)
@@ -27,7 +30,7 @@ green: main.o green.o sdl.o
 	$(CC) $^ $(POPPLER_LIBS) $(SDL_LIBS) -o $@
 
 main.o: main.c green.h
-	$(CC) $(CFLAGS) -c $< $(POPPLER_CFLAGS) -o $@
+	$(CC) $(CONFIG) $(CFLAGS) -c $< $(POPPLER_CFLAGS) -o $@
 
 green.o: green.c green.h
 	$(CC) $(CFLAGS) -c $< $(POPPLER_CFLAGS) -o $@
