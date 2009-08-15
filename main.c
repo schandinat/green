@@ -26,6 +26,9 @@
 #define SCHEME_FULLSCREEN		 3
 #define SCHEME_FIT			 4
 #define SCHEME_CURSORVISIBILITY		 5
+#define SCHEME_BACKGROUNDCOLOR		 6
+#define SCHEME_HIGHLIGHTCOLOR		 7
+#define SCHEME_HIGHLIGHTALPHA		 8
 
 
 struct SchemeData
@@ -58,7 +61,10 @@ struct SchemeProperty	scheme_property[] =
 	{"Height", SCHEME_HEIGHT, 0},
 	{"Fullscreen", SCHEME_FULLSCREEN, 0},
 	{"Fit", SCHEME_FIT, 0},
-	{"Cursor.Visibility", SCHEME_CURSORVISIBILITY, 0}
+	{"Cursor.Visibility", SCHEME_CURSORVISIBILITY, 0},
+	{"Background.Color", SCHEME_BACKGROUNDCOLOR, 0},
+	{"Highlight.Color", SCHEME_HIGHLIGHTCOLOR, 0},
+	{"Highlight.Alpha", SCHEME_HIGHLIGHTALPHA, 0}
 };
 
 
@@ -116,6 +122,145 @@ char*	ScanIdentifier( char **ptr )
 	return id;
 }
 
+int	GetColor( Green_RGBA *color, char *str )
+{
+	Green_RGBA	tmp = {0, 0, 0, 0};
+	unsigned char	c, channel = 0;
+	int	i = 0;
+	
+	if (!strncasecmp( str, "0x", 2 ) && strlen( str ) == 8)
+	{
+		for (i = 2; i < 8; i++)
+		{
+			if (str[i] >= '0' && str[i] <= '9')
+				c = str[i] - '0';
+			else if (str[i] >= 'a' && str[i] <= 'f')
+				c = str[i] - 'a' + 0x0A;
+			else if (str[i] >= 'A' && str[i] <= 'F')
+				c = str[i] - 'A' + 0x0A;
+			else
+				return -1;
+			
+			if (i % 2)
+			{
+				channel |= c;
+				if (i / 2 == 1)
+					tmp.r = channel;
+				else if (i / 2 == 2)
+					tmp.g = channel;
+				else if (i / 2 == 3)
+					tmp.b = channel;
+			}
+			else
+				channel = c<<4;
+		}
+		
+		color->r = tmp.r;
+		color->g = tmp.g;
+		color->b = tmp.b;
+	}
+	else if (!strcasecmp( str, "black" ))
+	{
+		color->r = 0x00;
+		color->g = 0x00;
+		color->b = 0x00;
+	}
+	else if (!strcasecmp( str, "gray" ))
+	{
+		color->r = 0x80;
+		color->g = 0x80;
+		color->b = 0x80;
+	}
+	else if (!strcasecmp( str, "maroon" ))
+	{
+		color->r = 0x80;
+		color->g = 0x00;
+		color->b = 0x00;
+	}
+	else if (!strcasecmp( str, "red" ))
+	{
+		color->r = 0xFF;
+		color->g = 0x00;
+		color->b = 0x00;
+	}
+	else if (!strcasecmp( str, "green" ))
+	{
+		color->r = 0x00;
+		color->g = 0x80;
+		color->b = 0x00;
+	}
+	else if (!strcasecmp( str, "lime" ))
+	{
+		color->r = 0x00;
+		color->g = 0xFF;
+		color->b = 0x00;
+	}
+	else if (!strcasecmp( str, "olive" ))
+	{
+		color->r = 0x80;
+		color->g = 0x80;
+		color->b = 0x00;
+	}
+	else if (!strcasecmp( str, "yellow" ))
+	{
+		color->r = 0xFF;
+		color->g = 0xFF;
+		color->b = 0x00;
+	}
+	else if (!strcasecmp( str, "navy" ))
+	{
+		color->r = 0x00;
+		color->g = 0x00;
+		color->b = 0x80;
+	}
+	else if (!strcasecmp( str, "blue" ))
+	{
+		color->r = 0x00;
+		color->g = 0x00;
+		color->b = 0xFF;
+	}
+	else if (!strcasecmp( str, "purple" ))
+	{
+		color->r = 0x80;
+		color->g = 0x00;
+		color->b = 0x80;
+	}
+	else if (!strcasecmp( str, "fuchsia" ))
+	{
+		color->r = 0xFF;
+		color->g = 0x00;
+		color->b = 0xFF;
+	}
+	else if (!strcasecmp( str, "teal" ))
+	{
+		color->r = 0x00;
+		color->g = 0x80;
+		color->b = 0x80;
+	}
+	else if (!strcasecmp( str, "aqua" ))
+	{
+		color->r = 0x00;
+		color->g = 0xFF;
+		color->b = 0xFF;
+	}
+	else if (!strcasecmp( str, "silver" ))
+	{
+		color->r = 0xC0;
+		color->g = 0xC0;
+		color->b = 0xC0;
+	}
+	else if (!strcasecmp( str, "white" ))
+	{
+		color->r = 0xFF;
+		color->g = 0xFF;
+		color->b = 0xFF;
+	}
+	else
+		return -1;
+	
+	return 0;
+}
+
 int	EvalProperty( Green_RTD *rtd, int id, char *arg )
 {
 	char	*tmpc;
@@ -170,6 +315,22 @@ int	EvalProperty( Green_RTD *rtd, int id, char *arg )
 				rtd->mouse.visibility = -1;
 			else if (!strcasecmp( arg, "invisible" ))
 				rtd->mouse.visibility = 0;
+			else
+				res = -1;
+			
+			break;
+		case SCHEME_BACKGROUNDCOLOR:
+			res = GetColor( &rtd->c_background, arg );
+			break;
+		case SCHEME_HIGHLIGHTCOLOR:
+			res = GetColor( &rtd->c_highlight, arg );
+			break;
+		case SCHEME_HIGHLIGHTALPHA:
+			tmpl = strtol( arg, &tmpc, 10 );
+			if (!*tmpc && tmpl >= 0 && tmpl <= 0xFF)
+				rtd->c_highlight.a = tmpl;
+			else if (tmpc[0] == '%' && !tmpc[1] && tmpl >= 0 && tmpl <= 100)
+				rtd->c_highlight.a = tmpl * 0xFF / 100;
 			else
 				res = -1;
 			
@@ -586,8 +747,14 @@ int	main( int argc, char *argv[] )
 	rtd.docs = NULL;
 	rtd.doc_count = 0;
 	rtd.doc_cur = 0;
-	rtd.c_background = 0x30D030;
-	rtd.c_highlight = 0x8080FF80;
+	rtd.c_background.r = 0x30;
+	rtd.c_background.g = 0xD0;
+	rtd.c_background.b = 0x30;
+	rtd.c_background.a = 0xFF;
+	rtd.c_highlight.r = 0x80;
+	rtd.c_highlight.g = 0xFF;
+	rtd.c_highlight.b = 0x80;
+	rtd.c_highlight.a = 0x80;
 	rtd.fit_method = NATURAL;
 	rtd.step = 1;
 	rtd.zoomstep = 1.1;

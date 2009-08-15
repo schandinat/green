@@ -32,6 +32,12 @@ typedef enum
 
 typedef struct
 {
+	unsigned char	r, g, b, a;
+	
+}	Green_RGBA;
+
+typedef struct
+{
 	PopplerDocument	*doc;
 	char	*uri;
 	int	page_count, page_cur,
@@ -48,7 +54,7 @@ typedef struct
 	unsigned short	flags, width, height;
 	Green_Document	**docs;
 	int	doc_count, doc_cur;
-	unsigned int	c_background, c_highlight;
+	Green_RGBA	c_background, c_highlight;
 	Green_FitMethod	fit_method;
 	double	step, zoomstep;
 	unsigned char	bb;

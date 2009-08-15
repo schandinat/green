@@ -118,7 +118,8 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 	SDL_Surface	*display = SDL_GetVideoSurface();
 	SDL_PixelFormat	fmt = *display->format;
 	GdkPixbuf	*pb = gdk_pixbuf_new( GDK_COLORSPACE_RGB, 0, 8, dest.w, dest.h );
-	unsigned char	*pixels, *src, r, g, b, a;
+	unsigned char	*pixels, *src;
+	unsigned short	ar, ag, ab, ia;
 	gdouble	tmp_d;
 	double	pwidth, pheight;
 	guint	i, n;
@@ -156,10 +157,10 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 	if (list)
 	{
 		poppler_page_get_size( page, &pwidth, &pheight );
-		r = (rtd->c_highlight)&0xFF;
-		g = (rtd->c_highlight>>8)&0xFF;
-		b = (rtd->c_highlight>>16)&0xFF;
-		a = (rtd->c_highlight>>24)&0xFF;
+		ar = rtd->c_highlight.a * rtd->c_highlight.r;
+		ag = rtd->c_highlight.a * rtd->c_highlight.g;
+		ab = rtd->c_highlight.a * rtd->c_highlight.b;
+		ia = 0xFF - rtd->c_highlight.a;
 		n = g_list_length( list );
 		for (i = 0; i < n; i++)
 		{
@@ -201,9 +202,9 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 				dst = display->pixels + (dest.y + y) * display->pitch + (dest.x + (int)rect->x1) * fmt.BytesPerPixel;
 				for (x = rect->x1; x <  (int)rect->x2; x++)
 				{
-					*dst = ((((src[0] * a + (256 - a) * r) / 256)>>fmt.Rloss)<<fmt.Rshift)
-						| ((((src[1] * a + (256 - a) * g) / 256)>>fmt.Gloss)<<fmt.Gshift)
-						| ((((src[2] * a + (256 - a) * b) / 256)>>fmt.Bloss)<<fmt.Bshift);
+					*dst = ((((src[0] * ia + ar) / 256)>>fmt.Rloss)<<fmt.Rshift)
+						| ((((src[1] * ia + ag) / 256)>>fmt.Gloss)<<fmt.Gshift)
+						| ((((src[2] * ia + ab) / 256)>>fmt.Bloss)<<fmt.Bshift);
 					
 					src += channels;
 					dst = (void*)dst + fmt.BytesPerPixel;
@@ -226,13 +227,12 @@ void	Render( Green_RTD *rtd )
 	SDL_Surface	*display = SDL_GetVideoSurface();
 	SDL_Rect	rect;
 	double	tscale;
-	int	tmp, w, h;
+	int	w, h;
 	
 	rect.x = rect.y = 0;
 	rect.w = display->w;
 	rect.h = display->h;
-	tmp = rtd->c_background;
-	SDL_FillRect( display, &rect, SDL_MapRGB( display->format, tmp&0xFF, (tmp>>8)&0xFF, (tmp>>16)&0xFF ));
+	SDL_FillRect( display, &rect, SDL_MapRGB( display->format, rtd->c_background.r, rtd->c_background.g, rtd->c_background.b ));
 	if (!Green_IsDocValid( rtd, rtd->doc_cur ))
 	{
 		SDL_UpdateRect( display, 0, 0, 0, 0 );
