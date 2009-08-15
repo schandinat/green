@@ -749,6 +749,8 @@ int	main( int argc, char *argv[] )
 		}
 		else if (!strcmp( opt, "fullscreen" ))
 			rtd.flags |= GREEN_FULLSCREEN;
+		else if (!strcmp( opt, "no-fullscreen" ))
+			rtd.flags &= ~GREEN_FULLSCREEN;
 		else
 			err = -1;
 		
