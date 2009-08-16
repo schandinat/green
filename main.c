@@ -67,10 +67,27 @@ struct SchemeProperty	scheme_property[] =
 	{"Highlight.Alpha", SCHEME_HIGHLIGHTALPHA, 0}
 };
 
+const char	*help_text =
+"Usage:\n"
+"    green [<options>] <PDF file 1> [<PDF file 2> [...]]\n"
+"\n"
+"The following options are available:\n"
+"    -config=<filename>          to read a configuration from a non-standard path\n"
+"    -scheme=<identifier>        to use a different scheme than the default\n"
+"    -fullscreen                 to startup in fullscreen mode\n"
+"    -no-fullscreen              to startup in window mode\n"
+"    -width=<width>              to specify the window width (in pixels)\n"
+"    -height=<height>            to specify the window height (in pixels)\n"
+"    -help                       shows this help\n"
+"    -version                    displays version information\n"
+"\n"
+"Further help is available online:\n"
+"    http://wiki.github.com/schandinat/green/help\n";
+
 
 void	PrintHelp()
 {
-	printf( "Help is currently only available online:\n\thttp://github.com/schandinat/green\n" );
+	puts( help_text );
 	return;
 }
 
