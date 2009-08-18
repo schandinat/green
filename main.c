@@ -93,7 +93,7 @@ void	PrintHelp()
 
 void	PrintVersion()
 {
-	printf( "green - the PDF reader\nversion: %s\nlicense: GNU GPL version 3\n", "0.1" );
+	printf( "green - the PDF reader\nversion: %s\nlicense: GNU GPL version 3\n", "0.2" );
 	return;
 }
 
