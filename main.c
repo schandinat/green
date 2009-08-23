@@ -29,6 +29,7 @@
 #define SCHEME_BACKGROUNDCOLOR		 6
 #define SCHEME_HIGHLIGHTCOLOR		 7
 #define SCHEME_HIGHLIGHTALPHA		 8
+#define SCHEME_CURSORBORDER		 9
 
 
 struct SchemeData
@@ -62,6 +63,7 @@ struct SchemeProperty	scheme_property[] =
 	{"Fullscreen", SCHEME_FULLSCREEN, 0},
 	{"Fit", SCHEME_FIT, 0},
 	{"Cursor.Visibility", SCHEME_CURSORVISIBILITY, 0},
+	{"Cursor.Border", SCHEME_CURSORBORDER, 0},
 	{"Background.Color", SCHEME_BACKGROUNDCOLOR, 0},
 	{"Highlight.Color", SCHEME_HIGHLIGHTCOLOR, 0},
 	{"Highlight.Alpha", SCHEME_HIGHLIGHTALPHA, 0}
@@ -280,7 +282,8 @@ int	GetColor( Green_RGBA *color, char *str )
 
 int	EvalProperty( Green_RTD *rtd, int id, char *arg )
 {
-	char	*tmpc;
+	double	tmpd;
+	char	*tmpc, *name, *val, *str;
 	long	tmpl;
 	int	res = 0;
 	
@@ -334,6 +337,55 @@ int	EvalProperty( Green_RTD *rtd, int id, char *arg )
 				rtd->mouse.visibility = 0;
 			else
 				res = -1;
+			
+			break;
+		case SCHEME_CURSORBORDER:
+			str = strtok_r( arg, ",", &arg );
+			if (!str)
+			{
+				res = -1;
+				break;
+			}
+			
+			do
+			{
+				name = strtok( str, " =" );
+				val = strtok( NULL, " =" );
+				if (!name || !val || strtok( NULL, " =" ))
+				{
+					res = -1;
+					break;
+				}
+				
+				if (!strcasecmp( name, "size" ))
+				{
+					tmpl = strtol( val, &tmpc, 10 );
+					if (tmpl < 0 || tmpl > 50 || tmpc[0] !='%' || tmpc[1] )
+					{
+						res = -1;
+						break;
+					}
+					else
+						rtd->mouse.border_size = tmpl;
+				}
+				else if (!strcasecmp( name, "speed" ))
+				{
+					tmpd = ReadFraction( val );
+					if (tmpd > 0)
+						rtd->mouse.border_speed = tmpd;
+					else
+					{
+						res = -1;
+						break;
+					}
+				}
+				else
+				{
+					res = -1;
+					break;
+				}
+				
+			}	while ((str = strtok_r( NULL, ",", &arg )));
 			
 			break;
 		case SCHEME_BACKGROUNDCOLOR:
@@ -433,6 +485,15 @@ int	ProcessSingleScheme( Green_RTD *rtd, struct SchemeArray *schemes, char *name
 			while (*arg == ' ')
 				arg++;
 			
+			arg = strdup( arg );
+			if (!arg)
+			{
+				fprintf( stderr, "Out of memory!\n" );
+				free( id );
+				res = -1;
+				break;
+			}
+			
 			for (i = 0; i < sizeof( scheme_property ) / sizeof( scheme_property[0] ); i++)
 			{
 				if (!strcasecmp( id, scheme_property[i].name ))
@@ -452,6 +513,7 @@ int	ProcessSingleScheme( Green_RTD *rtd, struct SchemeArray *schemes, char *name
 			if (i == sizeof( scheme_property ) / sizeof( scheme_property[0] ))
 				printf( "Ignoring unknown property '%s' with value '%s'\n", id, arg );
 			
+			free( arg );
 			free( id );
 		}
 		else
@@ -778,6 +840,8 @@ int	main( int argc, char *argv[] )
 	rtd.bb = 0x04;
 	rtd.mouse.flags = 1;
 	rtd.mouse.visibility = 500;
+	rtd.mouse.border_size = 0;
+	rtd.mouse.border_speed = 1;
 	schemes.scheme = NULL;
 	schemes.n = 0;
 	g_type_init();

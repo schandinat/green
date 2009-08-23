@@ -67,6 +67,8 @@ typedef struct
 			// -1: always visible
 			//  0: always invisible
 			// >0: timeout in ms
+		unsigned char	border_size;
+		double	border_speed;
 		
 	}	mouse;
 	
@@ -76,7 +78,7 @@ typedef struct
 int	Green_Open( Green_RTD *rtd, char *uri );
 void	Green_Close( Green_RTD *rtd, int id );
 double	Green_Fit( Green_Document *doc, int width, int height );
-void	Green_ScrollRelative( Green_Document *doc, int x, int y, int w, int h );
+void	Green_ScrollRelative( Green_Document *doc, int x, int y, int w, int h, int bb_flag );
 void	Green_Zoom( Green_Document *doc, int width, int height, double new_fs );
 int	Green_FindNext( Green_Document *doc, int start );
 

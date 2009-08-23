@@ -168,7 +168,7 @@ double	Green_Fit( Green_Document *doc, int w, int h )
 	return 1;
 }
 
-void	Green_ScrollRelative( Green_Document *doc, int x, int y, int w, int h )
+void	Green_ScrollRelative( Green_Document *doc, int x, int y, int w, int h, int bb_flag )
 {
 	unsigned char	bb_mode;
 	int	abs_x = x < 0 ? -x : x,
@@ -176,81 +176,84 @@ void	Green_ScrollRelative( Green_Document *doc, int x, int y, int w, int h )
 		max_x, max_y;
 	
 	GetScrollRegion( doc, w, h, &max_x, &max_y );
-	if (abs_x > abs_y && x > 0 && doc->xoffset >= max_x)
+	if (bb_flag)
 	{
-		if (!(doc->bb&0xF0) && (doc->bb&0x03))
+		if (abs_x > abs_y && x > 0 && doc->xoffset >= max_x)
 		{
-			bb_mode = doc->bb&0x03;
-			if (bb_mode == 1)
-				Green_GotoPage( doc, doc->page_cur + 1 );
-			else if (bb_mode == 2)
-				Green_GotoPage( doc, doc->page_cur - 1 );
-		}
-		
-		return;
-	}
-	else if (abs_x > abs_y && x < 0 && doc->xoffset <= 0)
-	{
-		if (!(doc->bb&0xF0) && (doc->bb&0x03))
-		{
-			bb_mode = doc->bb&0x03;
-			if (bb_mode == 1)
+			if (!(doc->bb&0xF0) && (doc->bb&0x03))
 			{
-				if (Green_GotoPage( doc, doc->page_cur - 1 ))
+				bb_mode = doc->bb&0x03;
+				if (bb_mode == 1)
+					Green_GotoPage( doc, doc->page_cur + 1 );
+				else if (bb_mode == 2)
+					Green_GotoPage( doc, doc->page_cur - 1 );
+			}
+			
+			return;
+		}
+		else if (abs_x > abs_y && x < 0 && doc->xoffset <= 0)
+		{
+			if (!(doc->bb&0xF0) && (doc->bb&0x03))
+			{
+				bb_mode = doc->bb&0x03;
+				if (bb_mode == 1)
 				{
-					GetScrollRegion( doc, w, h, &max_x, &max_y );
-					doc->xoffset = max_x;
+					if (Green_GotoPage( doc, doc->page_cur - 1 ))
+					{
+						GetScrollRegion( doc, w, h, &max_x, &max_y );
+						doc->xoffset = max_x;
+					}
+				}
+				else if (bb_mode == 2)
+				{
+					if (Green_GotoPage( doc, doc->page_cur + 1 ))
+					{
+						GetScrollRegion( doc, w, h, &max_x, &max_y );
+						doc->xoffset = max_x;
+					}
 				}
 			}
-			else if (bb_mode == 2)
-			{
-				if (Green_GotoPage( doc, doc->page_cur + 1 ))
-				{
-					GetScrollRegion( doc, w, h, &max_x, &max_y );
-					doc->xoffset = max_x;
-				}
-			}
+			
+			return;
 		}
-		
-		return;
-	}
-	else if (abs_x < abs_y && y > 0 && doc->yoffset >= max_y)
-	{
-		if (!(doc->bb&0xF0) && (doc->bb&0x0C))
+		else if (abs_x < abs_y && y > 0 && doc->yoffset >= max_y)
 		{
-			bb_mode = (doc->bb>>2)&0x03;
-			if (bb_mode == 1)
-				Green_GotoPage( doc, doc->page_cur + 1 );
-			else if (bb_mode == 2)
-				Green_GotoPage( doc, doc->page_cur - 1 );
+			if (!(doc->bb&0xF0) && (doc->bb&0x0C))
+			{
+				bb_mode = (doc->bb>>2)&0x03;
+				if (bb_mode == 1)
+					Green_GotoPage( doc, doc->page_cur + 1 );
+				else if (bb_mode == 2)
+					Green_GotoPage( doc, doc->page_cur - 1 );
+			}
+			
+			return;
 		}
-		
-		return;
-	}
-	else if (abs_x < abs_y && y < 0 && doc->yoffset <= 0)
-	{
-		if (!(doc->bb&0xF0) && (doc->bb&0x0C))
+		else if (abs_x < abs_y && y < 0 && doc->yoffset <= 0)
 		{
-			bb_mode = (doc->bb>>2)&0x03;
-			if (bb_mode == 1)
+			if (!(doc->bb&0xF0) && (doc->bb&0x0C))
 			{
-				if (Green_GotoPage( doc, doc->page_cur - 1 ))
+				bb_mode = (doc->bb>>2)&0x03;
+				if (bb_mode == 1)
 				{
-					GetScrollRegion( doc, w, h, &max_x, &max_y );
-					doc->yoffset = max_y;
+					if (Green_GotoPage( doc, doc->page_cur - 1 ))
+					{
+						GetScrollRegion( doc, w, h, &max_x, &max_y );
+						doc->yoffset = max_y;
+					}
+				}
+				else if (bb_mode == 2)
+				{
+					if (Green_GotoPage( doc, doc->page_cur + 1 ))
+					{
+						GetScrollRegion( doc, w, h, &max_x, &max_y );
+						doc->yoffset = max_y;
+					}
 				}
 			}
-			else if (bb_mode == 2)
-			{
-				if (Green_GotoPage( doc, doc->page_cur + 1 ))
-				{
-					GetScrollRegion( doc, w, h, &max_x, &max_y );
-					doc->yoffset = max_y;
-				}
-			}
+			
+			return;
 		}
-		
-		return;
 	}
 	
 	if (x <= 0 && abs_x > doc->xoffset )

@@ -299,28 +299,28 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			if (!doc)
 				break;
 			
-			Green_ScrollRelative( doc, 0, - display->h * rtd->step, display->w, display->h );
+			Green_ScrollRelative( doc, 0, - display->h * rtd->step, display->w, display->h, 1 );
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_DOWN:
 			if (!doc)
 				break;
 			
-			Green_ScrollRelative( doc, 0, display->h * rtd->step, display->w, display->h );
+			Green_ScrollRelative( doc, 0, display->h * rtd->step, display->w, display->h, 1 );
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_LEFT:
 			if (!doc)
 				break;
 			
-			Green_ScrollRelative( doc, - display->w * rtd->step, 0, display->w, display->h );
+			Green_ScrollRelative( doc, - display->w * rtd->step, 0, display->w, display->h, 1 );
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_RIGHT:
 			if (!doc)
 				break;
 			
-			Green_ScrollRelative( doc, display->w * rtd->step, 0, display->w, display->h );
+			Green_ScrollRelative( doc, display->w * rtd->step, 0, display->w, display->h, 1 );
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_PAGEUP:
@@ -411,6 +411,7 @@ int	Green_SDL_Main( Green_RTD *rtd )
 	unsigned char	event_count;
 	char	*str;
 	long	tmp;
+	int	x, y, width, height;
 	
 	if (SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER ))
 	{
@@ -555,7 +556,7 @@ int	Green_SDL_Main( Green_RTD *rtd )
 					}
 					
 					if (Green_IsDocValid( rtd, rtd->doc_cur ))
-						Green_ScrollRelative( rtd->docs[rtd->doc_cur], 0, 0, display->w, display->h );
+						Green_ScrollRelative( rtd->docs[rtd->doc_cur], 0, 0, display->w, display->h, 1 );
 					
 					flags |= FLAG_RENDER;
 					break;
@@ -610,7 +611,7 @@ int	Green_SDL_Main( Green_RTD *rtd )
 					
 					if (event.button.button == SDL_BUTTON_RIGHT)
 					{
-						Green_ScrollRelative( rtd->docs[rtd->doc_cur], right_x - event.button.x, right_y - event.button.y, display->w, display->h );
+						Green_ScrollRelative( rtd->docs[rtd->doc_cur], right_x - event.button.x, right_y - event.button.y, display->w, display->h, 1 );
 						flags |= FLAG_RENDER;
 					}
 					
@@ -621,6 +622,33 @@ int	Green_SDL_Main( Green_RTD *rtd )
 						mouse_cur = SDL_GetTicks();
 						if ((Uint32)(mouse_cur - mouse_last) > rtd->mouse.visibility)
 							SDL_ShowCursor( SDL_DISABLE );
+					}
+					
+					SDL_GetMouseState( &x, &y );
+					if (rtd->mouse.border_size && Green_IsDocValid( rtd, rtd->doc_cur ) && x >= 0 && y >= 0 && x <= display->w && y <= display->h)
+					{
+						width = display->w * rtd->mouse.border_size / 100;
+						height = display->h * rtd->mouse.border_size / 100;
+						
+						if (x < width)
+							width = -((width - x) * display->w / width * rtd->mouse.border_speed * live_interval / 1000);
+						else if (x > display->w - width)
+							width = (x + width - display->w) * display->w / width * rtd->mouse.border_speed * live_interval / 1000;
+						else
+							width = 0;
+						
+						if (y < height)
+							height = -((height - y) * display->h / height * rtd->mouse.border_speed * live_interval / 1000);
+						else if (y > display->h - height)
+							height = (y + height - display->h) * display->h / height * rtd->mouse.border_speed * live_interval / 1000;
+						else
+							height = 0;
+						
+						if (width || height)
+						{
+							Green_ScrollRelative( rtd->docs[rtd->doc_cur], width, height, display->w, display->h, 0 );
+							flags |= FLAG_RENDER;
+						}
 					}
 					
 					break;
