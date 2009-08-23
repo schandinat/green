@@ -33,6 +33,9 @@ typedef struct
 }	IBuffer;
 
 
+const Uint32	live_interval = 40;
+
+
 void	GetInput( IBuffer *input, SDL_Event *event )
 {
 	char	c;
@@ -382,7 +385,7 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event )
 	return state;
 }
 
-Uint32	mouse_timeout( Uint32 interval, void *param )
+Uint32	live_timer( Uint32 interval, void *param )
 {
 	SDL_Event	event;
 	
@@ -425,12 +428,9 @@ int	Green_SDL_Main( Green_RTD *rtd )
                 return 3;
 	}
 	
-	if (rtd->mouse.visibility > 0)
-	{
-		timer = SDL_AddTimer( 100, mouse_timeout, NULL );
-		mouse_last = SDL_GetTicks();
-	}
-	else if (!rtd->mouse.visibility)
+	timer = SDL_AddTimer( live_interval, live_timer, NULL );
+	mouse_last = SDL_GetTicks();
+	if (!rtd->mouse.visibility)
 		SDL_ShowCursor( SDL_DISABLE );
 	
 	Render( rtd );
@@ -602,9 +602,12 @@ int	Green_SDL_Main( Green_RTD *rtd )
 				
 				break;
 			case SDL_USEREVENT:
-				mouse_cur = SDL_GetTicks();
-				if (mouse_cur < mouse_last || mouse_cur - mouse_last > rtd->mouse.visibility)
-					SDL_ShowCursor( SDL_DISABLE );
+				if (rtd->mouse.visibility > 0)
+				{
+					mouse_cur = SDL_GetTicks();
+					if ((Uint32)(mouse_cur - mouse_last) > rtd->mouse.visibility)
+						SDL_ShowCursor( SDL_DISABLE );
+				}
 				
 				break;
 		}
