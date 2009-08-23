@@ -19,9 +19,13 @@
 #include "green.h"
 
 
+#define FLAG_QUIT	0x0001
+#define FLAG_RENDER	0x0002
+
+
 typedef enum
 {
-	NORMAL, QUIT, GOTO, SEARCH, FIT
+	NORMAL, GOTO, SEARCH, FIT
 	
 }	RState;
 
@@ -256,7 +260,7 @@ void	Render( Green_RTD *rtd )
 	return;
 }
 
-RState	NormalInput( Green_RTD *rtd, SDL_Event *event )
+RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 {
 	Green_Document	*doc = NULL;
 	SDL_Surface	*display = SDL_GetVideoSurface();
@@ -269,11 +273,11 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event )
 	switch (event->key.keysym.sym)
 	{
 		case 'q':
-			state = QUIT;
+			*flags |= FLAG_QUIT;
 			break;
 		case 'c':
 			Green_Close( rtd, rtd->doc_cur );
-			Render( rtd );
+			*flags |= FLAG_RENDER;
 			break;
 		case 'g':
 			state = GOTO;
@@ -286,7 +290,7 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event )
 				break;
 			
 			doc->page_cur = Green_FindNext( doc, doc->page_cur + 1 );
-			Render( rtd );
+			*flags |= FLAG_RENDER;
 			break;
 		case 'f':
 			state = FIT;
@@ -296,54 +300,54 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event )
 				break;
 			
 			Green_ScrollRelative( doc, 0, - display->h * rtd->step, display->w, display->h );
-			Render( rtd );
+			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_DOWN:
 			if (!doc)
 				break;
 			
 			Green_ScrollRelative( doc, 0, display->h * rtd->step, display->w, display->h );
-			Render( rtd );
+			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_LEFT:
 			if (!doc)
 				break;
 			
 			Green_ScrollRelative( doc, - display->w * rtd->step, 0, display->w, display->h );
-			Render( rtd );
+			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_RIGHT:
 			if (!doc)
 				break;
 			
 			Green_ScrollRelative( doc, display->w * rtd->step, 0, display->w, display->h );
-			Render( rtd );
+			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_PAGEUP:
 			if (!doc || !Green_GotoPage( doc, doc->page_cur - 1  ))
 				break;
 			
-			Render( rtd );
+			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_PAGEDOWN:
 			if (!doc || !Green_GotoPage( doc, doc->page_cur + 1  ))
 				break;
 			
-			Render( rtd );
+			*flags |= FLAG_RENDER;
 			break;
 		case '+':
 			if (!doc)
 				break;
 			
 			Green_Zoom( doc, display->w,display->h, doc->finescale * rtd->zoomstep );
-			Render( rtd );
+			*flags |= FLAG_RENDER;
 			break;
 		case '-':
 			if (!doc)
 				break;
 			
 			Green_Zoom( doc, display->w,display->h, doc->finescale / rtd->zoomstep );
-			Render( rtd );
+			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_F12:
 			f++;
@@ -372,11 +376,11 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event )
 				break;
 			
 			rtd->doc_cur = f;
-			Render( rtd );
+			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_TAB:
 			Green_NextVaildDoc( rtd );
-			Render( rtd );
+			*flags |= FLAG_RENDER;
 			break;
 		default:
 			break;
@@ -403,6 +407,8 @@ int	Green_SDL_Main( Green_RTD *rtd )
 	IBuffer	input;
 	Uint32	mouse_last = 0, mouse_cur;
 	Uint16	left_x = 0, left_y = 0, right_x = 0, right_y = 0;
+	unsigned short	flags = FLAG_RENDER;
+	unsigned char	event_count;
 	char	*str;
 	long	tmp;
 	
@@ -433,190 +439,200 @@ int	Green_SDL_Main( Green_RTD *rtd )
 	if (!rtd->mouse.visibility)
 		SDL_ShowCursor( SDL_DISABLE );
 	
-	Render( rtd );
 	do
 	{
+		if (flags&FLAG_RENDER)
+		{
+			Render( rtd );
+			flags ^= FLAG_RENDER;
+		}
+		
+		event_count = 0;
 		if (!SDL_WaitEvent( &event ))
 		{
 			SDL_Quit();
 			return -1;
 		}
 		
-		switch (event.type)
+		do
 		{
-			case SDL_QUIT:
-				state = QUIT;
-				break;
-			case SDL_KEYDOWN:
-				if (event.key.keysym.sym == SDLK_ESCAPE)
-					state = NORMAL;
-				else if (event.key.keysym.sym == SDLK_RETURN)
-				{
-					if (!Green_IsDocValid( rtd, rtd->doc_cur ))
-						break;
-					
-					input.buff[input.used] = 0;
-					switch (state)
+			switch (event.type)
+			{
+				case SDL_QUIT:
+					flags |= FLAG_QUIT;
+					break;
+				case SDL_KEYDOWN:
+					if (event.key.keysym.sym == SDLK_ESCAPE)
+						state = NORMAL;
+					else if (event.key.keysym.sym == SDLK_RETURN)
 					{
-						case GOTO:
-							tmp = strtol( input.buff, &str, 10 );
-							if (*str || tmp <=0 || tmp > rtd->docs[rtd->doc_cur]->page_count )
-								break;
-							
-							rtd->docs[rtd->doc_cur]->page_cur = tmp - 1;
-							rtd->docs[rtd->doc_cur]->xoffset = 0;
-							rtd->docs[rtd->doc_cur]->yoffset = 0;
-							Render( rtd );
+						if (!Green_IsDocValid( rtd, rtd->doc_cur ))
 							break;
-						case SEARCH:
-							free( rtd->docs[rtd->doc_cur]->search_str );
-							rtd->docs[rtd->doc_cur]->search_str = NULL;
-							if (!strlen( input.buff ))
+						
+						input.buff[input.used] = 0;
+						switch (state)
+						{
+							case GOTO:
+								tmp = strtol( input.buff, &str, 10 );
+								if (*str || tmp <=0 || tmp > rtd->docs[rtd->doc_cur]->page_count )
+									break;
+								
+								rtd->docs[rtd->doc_cur]->page_cur = tmp - 1;
+								rtd->docs[rtd->doc_cur]->xoffset = 0;
+								rtd->docs[rtd->doc_cur]->yoffset = 0;
+								flags |= FLAG_RENDER;
 								break;
-							
-							rtd->docs[rtd->doc_cur]->search_str = strdup( input.buff );
-							tmp = Green_FindNext( rtd->docs[rtd->doc_cur], rtd->docs[rtd->doc_cur]->page_cur );
-							if (tmp < 0)
-							{
+							case SEARCH:
 								free( rtd->docs[rtd->doc_cur]->search_str );
 								rtd->docs[rtd->doc_cur]->search_str = NULL;
+								if (!strlen( input.buff ))
+									break;
+								
+								rtd->docs[rtd->doc_cur]->search_str = strdup( input.buff );
+								tmp = Green_FindNext( rtd->docs[rtd->doc_cur], rtd->docs[rtd->doc_cur]->page_cur );
+								if (tmp < 0)
+								{
+									free( rtd->docs[rtd->doc_cur]->search_str );
+									rtd->docs[rtd->doc_cur]->search_str = NULL;
+									break;
+								}
+								
+								rtd->docs[rtd->doc_cur]->page_cur = tmp;
+								flags |= FLAG_RENDER;
 								break;
-							}
-							
-							rtd->docs[rtd->doc_cur]->page_cur = tmp;
+							default:
+								break;
+						}
+						
+						state = NORMAL;
+					}
+					else if (state == NORMAL)
+					{
+						state = NormalInput( rtd, &event, &flags );
+						if (state != NORMAL)
+						{
+							input.used = 0;
+							input.cur = 0;
+						}
+					}
+					else if (state == GOTO || state == SEARCH)
+						GetInput( &input, &event );
+					else if (state == FIT)
+					{
+						state = NORMAL;
+						if (!Green_IsDocValid( rtd, rtd->doc_cur ))
+							break;
+						
+						if (event.key.keysym.sym == 'n')
+							rtd->docs[rtd->doc_cur]->fit_method = NATURAL;
+						else if (event.key.keysym.sym == 'w')
+							rtd->docs[rtd->doc_cur]->fit_method = WIDTH;
+						else if (event.key.keysym.sym == 'h')
+							rtd->docs[rtd->doc_cur]->fit_method = HEIGHT;
+						else if (event.key.keysym.sym == 'p')
+							rtd->docs[rtd->doc_cur]->fit_method = PAGE;
+						
+						if (event.key.keysym.sym == 'n'
+							|| event.key.keysym.sym == 'w'
+							|| event.key.keysym.sym == 'h'
+							|| event.key.keysym.sym == 'p')
+						{
+							rtd->docs[rtd->doc_cur]->finescale = 1;
+							rtd->docs[rtd->doc_cur]->xoffset = 0;
+							rtd->docs[rtd->doc_cur]->yoffset = 0;
+							flags |= FLAG_RENDER;
+						}
+					}
+					
+					break;
+				case SDL_VIDEORESIZE:
+					display = SDL_SetVideoMode( event.resize.w, event.resize.h, 0, SDL_HWSURFACE | SDL_ANYFORMAT | SDL_RESIZABLE );
+					if (!display)
+					{
+						SDL_Quit();
+						fprintf( stderr, "SDL_SetVideoMode failed: %s\n", SDL_GetError() );
+						return -5;
+					}
+					
+					if (Green_IsDocValid( rtd, rtd->doc_cur ))
+						Green_ScrollRelative( rtd->docs[rtd->doc_cur], 0, 0, display->w, display->h );
+					
+					flags |= FLAG_RENDER;
+					break;
+				case SDL_MOUSEMOTION:
+					if (rtd->mouse.visibility > 0)
+					{
+						mouse_last = SDL_GetTicks();
+						SDL_ShowCursor( SDL_ENABLE );
+					}
+					
+					break;
+				case SDL_MOUSEBUTTONDOWN:
+					if (rtd->mouse.visibility > 0)
+					{
+						mouse_last = SDL_GetTicks();
+						SDL_ShowCursor( SDL_ENABLE );
+					}
+					
+					if (!(rtd->mouse.flags&0x01) || !Green_IsDocValid( rtd, rtd->doc_cur ))
+						break;
+					
+					switch (event.button.button)
+					{
+						case SDL_BUTTON_LEFT:
+							left_x = event.button.x;
+							left_y = event.button.y;
+							break;
+						case SDL_BUTTON_RIGHT:
+							right_x = event.button.x;
+							right_y = event.button.y;
+							break;
+						case SDL_BUTTON_WHEELDOWN:
+							Green_Zoom( rtd->docs[rtd->doc_cur], display->w, display->h, rtd->docs[rtd->doc_cur]->finescale * rtd->zoomstep );
 							Render( rtd );
 							break;
-						default:
+						case SDL_BUTTON_WHEELUP:
+							Green_Zoom( rtd->docs[rtd->doc_cur], display->w, display->h, rtd->docs[rtd->doc_cur]->finescale / rtd->zoomstep );
+							Render( rtd );
 							break;
 					}
 					
-					state = NORMAL;
-				}
-				else if (state == NORMAL)
-				{
-					state = NormalInput( rtd, &event );
-					if (state != NORMAL)
+					break;
+				case SDL_MOUSEBUTTONUP:
+					if (rtd->mouse.visibility)
 					{
-						input.used = 0;
-						input.cur = 0;
+						mouse_last = SDL_GetTicks();
+						SDL_ShowCursor( SDL_ENABLE );
 					}
-				}
-				else if (state == GOTO || state == SEARCH)
-					GetInput( &input, &event );
-				else if (state == FIT)
-				{
-					state = NORMAL;
-					if (!Green_IsDocValid( rtd, rtd->doc_cur ))
+					
+					if (!(rtd->mouse.flags&0x01) || !Green_IsDocValid( rtd, rtd->doc_cur ))
 						break;
 					
-					if (event.key.keysym.sym == 'n')
-						rtd->docs[rtd->doc_cur]->fit_method = NATURAL;
-					else if (event.key.keysym.sym == 'w')
-						rtd->docs[rtd->doc_cur]->fit_method = WIDTH;
-					else if (event.key.keysym.sym == 'h')
-						rtd->docs[rtd->doc_cur]->fit_method = HEIGHT;
-					else if (event.key.keysym.sym == 'p')
-						rtd->docs[rtd->doc_cur]->fit_method = PAGE;
-					
-					if (event.key.keysym.sym == 'n'
-						|| event.key.keysym.sym == 'w'
-						|| event.key.keysym.sym == 'h'
-						|| event.key.keysym.sym == 'p')
+					if (event.button.button == SDL_BUTTON_RIGHT)
 					{
-						rtd->docs[rtd->doc_cur]->finescale = 1;
-						rtd->docs[rtd->doc_cur]->xoffset = 0;
-						rtd->docs[rtd->doc_cur]->yoffset = 0;
-						Render( rtd );
+						Green_ScrollRelative( rtd->docs[rtd->doc_cur], right_x - event.button.x, right_y - event.button.y, display->w, display->h );
+						flags |= FLAG_RENDER;
 					}
-				}
-				
-				break;
-			case SDL_VIDEORESIZE:
-				display = SDL_SetVideoMode( event.resize.w, event.resize.h, 0, SDL_HWSURFACE | SDL_ANYFORMAT | SDL_RESIZABLE );
-				if (!display)
-				{
-					SDL_Quit();
-					fprintf( stderr, "SDL_SetVideoMode failed: %s\n", SDL_GetError() );
-					return -5;
-				}
-				
-				if (Green_IsDocValid( rtd, rtd->doc_cur ))
-					Green_ScrollRelative( rtd->docs[rtd->doc_cur], 0, 0, display->w, display->h );
-				
-				Render( rtd );
-				break;
-			case SDL_MOUSEMOTION:
-				if (rtd->mouse.visibility)
-				{
-					mouse_last = SDL_GetTicks();
-					SDL_ShowCursor( SDL_ENABLE );
-				}
-				
-				break;
-			case SDL_MOUSEBUTTONDOWN:
-				if (rtd->mouse.visibility)
-				{
-					mouse_last = SDL_GetTicks();
-					SDL_ShowCursor( SDL_ENABLE );
-				}
-				
-				if (!(rtd->mouse.flags&0x01) || !Green_IsDocValid( rtd, rtd->doc_cur ))
+					
 					break;
-				
-				switch (event.button.button)
-				{
-					case SDL_BUTTON_LEFT:
-						left_x = event.button.x;
-						left_y = event.button.y;
-						break;
-					case SDL_BUTTON_RIGHT:
-						right_x = event.button.x;
-						right_y = event.button.y;
-						break;
-					case SDL_BUTTON_WHEELDOWN:
-						Green_Zoom( rtd->docs[rtd->doc_cur], display->w, display->h, rtd->docs[rtd->doc_cur]->finescale * rtd->zoomstep );
-						Render( rtd );
-						break;
-					case SDL_BUTTON_WHEELUP:
-						Green_Zoom( rtd->docs[rtd->doc_cur], display->w, display->h, rtd->docs[rtd->doc_cur]->finescale / rtd->zoomstep );
-						Render( rtd );
-						break;
-				}
-				
-				break;
-			case SDL_MOUSEBUTTONUP:
-				if (rtd->mouse.visibility)
-				{
-					mouse_last = SDL_GetTicks();
-					SDL_ShowCursor( SDL_ENABLE );
-				}
-				
-				if (!(rtd->mouse.flags&0x01) || !Green_IsDocValid( rtd, rtd->doc_cur ))
+				case SDL_USEREVENT:
+					if (rtd->mouse.visibility > 0)
+					{
+						mouse_cur = SDL_GetTicks();
+						if ((Uint32)(mouse_cur - mouse_last) > rtd->mouse.visibility)
+							SDL_ShowCursor( SDL_DISABLE );
+					}
+					
 					break;
-				
-				if (event.button.button == SDL_BUTTON_RIGHT)
-				{
-					Green_ScrollRelative( rtd->docs[rtd->doc_cur], right_x - event.button.x, right_y - event.button.y, display->w, display->h );
-					Render( rtd );
-				}
-				
-				break;
-			case SDL_USEREVENT:
-				if (rtd->mouse.visibility > 0)
-				{
-					mouse_cur = SDL_GetTicks();
-					if ((Uint32)(mouse_cur - mouse_last) > rtd->mouse.visibility)
-						SDL_ShowCursor( SDL_DISABLE );
-				}
-				
-				break;
-		}
+			}
+			
+			event_count++;
+			
+		}	while (event_count && SDL_PollEvent( &event ));
 		
-	}	while (state != QUIT);
+	}	while (!(flags&FLAG_QUIT));
 	
-	if (timer)
-		SDL_RemoveTimer( timer );
-	
+	SDL_RemoveTimer( timer );
 	SDL_Quit();
 	return 0;
 }
