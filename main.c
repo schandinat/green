@@ -31,6 +31,7 @@
 #define SCHEME_HIGHLIGHTALPHA		 8
 #define SCHEME_CURSORBORDER		 9
 
+#define RGB_TEXT "/usr/share/X11/rgb.txt"
 
 struct SchemeData
 {
@@ -139,6 +140,73 @@ char*	ScanIdentifier( char **ptr )
 	memcpy( id, start, *ptr - start );
 	id[*ptr - start] = 0;
 	return id;
+}
+
+int	ReadLine( FILE *f, char *buffer, int len )
+{
+	char c = '\0';
+	int i = 0;
+
+	if (len <= 1)
+		return 1;
+
+	unsigned int cnt = fread( &c, 1, 1, f );
+
+	while (c != '\n' && c != '\r') {
+		if (cnt != 1) {
+			if (feof( f )) {
+				buffer[i] = 0;
+				return 1;
+			}
+			else {
+				printf( "Read file failed" );
+				exit( 1 );
+			}
+		}
+
+		buffer[i++] = c;
+
+		if (--len == 1)
+			break;
+
+		cnt = fread( &c, 1, 1, f );
+	}
+
+	buffer[i] = 0;
+	return 0;
+}
+
+int	TryX11RGBText( Green_RGBA *color, char *str )
+{
+	if (str == NULL)
+		return 1;
+
+	FILE *file = fopen( RGB_TEXT, "r" );
+	if (!file)
+	{
+		return 1;
+	}
+
+	char buf[256];
+	while (!ReadLine( file, buf, 255 ))
+	{
+		if (!strcasecmp( str, buf+13 ))
+		{
+
+#define GetDigit( d ) \
+	(d == ' ' ? 0 : d - '0')
+
+			color->r = (GetDigit( buf[0] )*10 + GetDigit( buf[1] ))*10 + GetDigit( buf[ 2] );
+			color->g = (GetDigit( buf[4] )*10 + GetDigit( buf[5] ))*10 + GetDigit( buf[ 6] );
+			color->b = (GetDigit( buf[8] )*10 + GetDigit( buf[9] ))*10 + GetDigit( buf[10] );
+			fclose( file );
+			return 0;
+		}
+	}
+
+	fclose( file );
+
+	return 1;
 }
 
 int	GetColor( Green_RGBA *color, char *str )
@@ -275,7 +343,8 @@ int	GetColor( Green_RGBA *color, char *str )
 		color->b = 0xFF;
 	}
 	else
-		return -1;
+		if (TryX11RGBText( color, str ))
+			return -1;
 	
 	return 0;
 }
