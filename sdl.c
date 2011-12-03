@@ -124,39 +124,45 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 	Green_Document	*doc = rtd->docs[rtd->doc_cur];
 	SDL_Surface	*display = SDL_GetVideoSurface();
 	SDL_PixelFormat	fmt = *display->format;
-	GdkPixbuf	*pb = gdk_pixbuf_new( GDK_COLORSPACE_RGB, 0, 8, dest.w, dest.h );
-	unsigned char	*pixels, *src;
+	cairo_surface_t	*surface;
+	cairo_t		*context;
+	void	*pixels;
 	unsigned short	ar, ag, ab, ia;
 	gdouble	tmp_d;
 	double	pwidth, pheight;
 	guint	i, n;
 	GList	*list = NULL;
-	Uint32	*dst;
-	int	x, y, rowstride, channels;
-	
-	if (!pb)
-		return;
-	
+	Uint32	*src, *dst;
+	int	x, y, rowstride, w, h;
+
 	if (doc->search_str)
 		list = poppler_page_find_text( page, doc->search_str );
-	
-	poppler_page_render_to_pixbuf( page, xoff, yoff, 0, 0, tscale, 0, pb );
-	pixels = gdk_pixbuf_get_pixels( pb );
-	rowstride = gdk_pixbuf_get_rowstride( pb );
-	channels = gdk_pixbuf_get_n_channels( pb );
+
+	Green_GetDimension( page, &w, &h, tscale );
+	surface = cairo_image_surface_create( CAIRO_FORMAT_ARGB32, w, h );
+	context = cairo_create( surface );
+	cairo_save( context );
+	cairo_scale( context, tscale, tscale );
+	poppler_page_render( page, context );
+	cairo_restore( context );
+	cairo_set_operator( context, CAIRO_OPERATOR_DEST_OVER );
+	cairo_set_source_rgb( context, 1., 1., 1. );
+	cairo_paint( context );
+	pixels = cairo_image_surface_get_data( surface );
+	rowstride = cairo_image_surface_get_stride( surface );
 	SDL_LockSurface( display );
 	for (y = 0; y < dest.h; y++)
 	{
-		src = pixels + y * rowstride;
+		src = pixels + (y + yoff) * rowstride + xoff * 4;
 		dst = display->pixels + (dest.y + y) * display->pitch
 			+ dest.x * fmt.BytesPerPixel;
 		for (x = 0; x < dest.w; x++)
 		{
-			*dst = ((src[0]>>fmt.Rloss)<<fmt.Rshift)
-				| ((src[1]>>fmt.Gloss)<<fmt.Gshift)
-				| ((src[2]>>fmt.Bloss)<<fmt.Bshift);
+			*dst = ((((*src>>16)&0xFF)>>fmt.Rloss)<<fmt.Rshift)
+				| ((((*src>>8)&0xFF)>>fmt.Gloss)<<fmt.Gshift)
+				| (((*src&0xFF)>>fmt.Bloss)<<fmt.Bshift);
 			
-			src += channels;
+			src++;
 			dst = (void*)dst + fmt.BytesPerPixel;
 		}
 	}
@@ -205,7 +211,7 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 			rect->y2 -= yoff;
 			for (y = rect->y1; y < (int)rect->y2; y++)
 			{
-				src = pixels + y * rowstride + (int)rect->x1 * channels;
+				src = pixels + y * rowstride + (int)rect->x1 * 4;
 				dst = display->pixels + (dest.y + y) * display->pitch + (dest.x + (int)rect->x1) * fmt.BytesPerPixel;
 				for (x = rect->x1; x <  (int)rect->x2; x++)
 				{
@@ -213,7 +219,7 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 						| ((((src[1] * ia + ag) / 256)>>fmt.Gloss)<<fmt.Gshift)
 						| ((((src[2] * ia + ab) / 256)>>fmt.Bloss)<<fmt.Bshift);
 					
-					src += channels;
+					src++;
 					dst = (void*)dst + fmt.BytesPerPixel;
 				}
 			}
@@ -223,7 +229,8 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 	}
 	
 	SDL_UnlockSurface( display );
-	g_object_unref( G_OBJECT( pb ) );
+	cairo_surface_destroy( surface );
+	cairo_destroy( context );
 	return;
 }
 
