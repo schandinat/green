@@ -89,16 +89,11 @@ void	GetInput( IBuffer *input, SDL_Event *event )
 		case '?':
 		case '(':
 		case ')':
-		case '{':
-		case '}':
 		case '@':
 		case ' ':
 		case '$':
-		case '§':
-		case '%':
 		case '&':
 		case '#':
-		case '~':
 		case '\\':
 			if (input->used == sizeof( input->buff ) - 1)
 				break;
