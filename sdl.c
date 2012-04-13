@@ -211,13 +211,13 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 			rect->y2 -= yoff;
 			for (y = rect->y1; y < (int)rect->y2; y++)
 			{
-				src = pixels + y * rowstride + (int)rect->x1 * 4;
+				src = pixels + (y + yoff) * rowstride + (xoff + (int)rect->x1) * 4;
 				dst = display->pixels + (dest.y + y) * display->pitch + (dest.x + (int)rect->x1) * fmt.BytesPerPixel;
 				for (x = rect->x1; x <  (int)rect->x2; x++)
 				{
-					*dst = ((((src[0] * ia + ar) / 256)>>fmt.Rloss)<<fmt.Rshift)
-						| ((((src[1] * ia + ag) / 256)>>fmt.Gloss)<<fmt.Gshift)
-						| ((((src[2] * ia + ab) / 256)>>fmt.Bloss)<<fmt.Bshift);
+					*dst = ((((((*src>>16)&0xFF) * ia + ar) / 256)>>fmt.Rloss)<<fmt.Rshift)
+						| ((((((*src>>8)&0xFF) * ia + ag) / 256)>>fmt.Gloss)<<fmt.Gshift)
+						| (((((*src&0xFF) * ia + ab) / 256)>>fmt.Bloss)<<fmt.Bshift);
 					
 					src++;
 					dst = (void*)dst + fmt.BytesPerPixel;
