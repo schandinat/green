@@ -304,7 +304,21 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			Green_ScrollRelative( doc, 0, - display->h * rtd->step, display->w, display->h, 1 );
 			*flags |= FLAG_RENDER;
 			break;
+		case SDLK_k:
+			if (!doc)
+				break;
+			
+			Green_ScrollRelative( doc, 0, - display->h * rtd->step, display->w, display->h, 1 );
+			*flags |= FLAG_RENDER;
+			break;
 		case SDLK_DOWN:
+			if (!doc)
+				break;
+			
+			Green_ScrollRelative( doc, 0, display->h * rtd->step, display->w, display->h, 1 );
+			*flags |= FLAG_RENDER;
+			break;
+                case SDLK_j:
 			if (!doc)
 				break;
 			
@@ -316,6 +330,20 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 				break;
 			
 			Green_ScrollRelative( doc, - display->w * rtd->step, 0, display->w, display->h, 1 );
+			*flags |= FLAG_RENDER;
+			break;
+		case SDLK_h:
+			if (!doc)
+				break;
+			
+			Green_ScrollRelative( doc, - display->w * rtd->step, 0, display->w, display->h, 1 );
+			*flags |= FLAG_RENDER;
+			break;
+		case SDLK_l:
+			if (!doc)
+				break;
+			
+			Green_ScrollRelative( doc, display->w * rtd->step, 0, display->w, display->h, 1 );
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_RIGHT:
