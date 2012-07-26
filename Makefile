@@ -8,6 +8,7 @@ DESTDIR		:=
 PREFIX		:=	/usr/local
 BINDIR		:=	$(PREFIX)/bin
 SYSCONFDIR	:=	$(PREFIX)/etc
+MANDIR		:=      /usr/share/man
 
 CONFIG	:=	-D GREEN_SYSCONFIG_FILE=\"$(SYSCONFDIR)/green.conf\" -D GREEN_USERCONFIG_FILE=\".green.conf\"
 
@@ -24,7 +25,7 @@ clean:
 
 install: green
 	$(INSTALL) green $(DESTDIR)/$(BINDIR)/
-
+	$(INSTALL) green.1 $(MANDIR)/man1/
 
 green: main.o green.o sdl.o
 	$(CC) $^ $(POPPLER_LIBS) $(SDL_LIBS) -o $@
