@@ -71,10 +71,11 @@ NAVIGATION INSIDE A DOCUMENT
 
 FILES
 -----
-*$(HOME)/.green.conf* 
-  Per user configuration file.
-*/usr/local/etc/green.conf*
-  The system wide configuration file. 
+*$(HOME)/.green.conf*     
+  Per user configuration file.  
+
+*/usr/local/etc/green.conf*  
+  The system wide configuration file.   
 
 
 AUTHOR
