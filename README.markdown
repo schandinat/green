@@ -1,4 +1,4 @@
-FOO 1 "MARCH 1995" Linux "User Manuals"
+GREEN - A light weight PDF reader
 =======================================
 
 NAME
@@ -79,9 +79,7 @@ FILES
 
 AUTHOR
 ------
-The Green source code may be downloaded
-from <http://github.com/schandinat/green/>. 
-Green is Licensed under GNU GPL version 3.
-This man page was written for the Debian Distribution by Oz Nahum <nahumoz@gmail.com>.
-
+The Green source code may be downloaded from <http://github.com/schandinat/green/>.   
+Green is Licensed under GNU GPL version 3.  
+This man page was written for the Debian GNU / Linux System by Oz Nahum <nahumoz@gmail.com>.
 
