@@ -1,0 +1,27 @@
+This package was debianized by Florian Tobias Schandinat <FlorianSchandinat@gmx.de> on
+Tue, 18 Aug 2009 07:16:31 +0200.
+
+It was downloaded from http://github.com/schandinat/green/downloads
+
+Upstream Author(s):
+
+    Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+
+Copyright:
+
+    Copyright (C) 2009 Florian Tobias Schandinat
+
+License:
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; version 3.
+
+On Debian systems, the complete text of the GNU General Public
+License can be found in `/usr/share/common-licenses/GPL-3'
+
+The Debian packaging is (C) 2009, Florian Tobias Schandinat <FlorianSchandinat@gmx.de> and
+is licensed under the GPL, see `/usr/share/common-licenses/GPL'.
+
+# Please also look if there are files or directories which have a
+# different copyright/license attached and list them here.
