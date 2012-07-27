@@ -1,5 +1,5 @@
-GREEN - A light weight PDF reader
-=======================================
+GREEN 1 "July 2012" "Debian GNU / Linux" "User Manuals"
+======================================================
 
 NAME
 ----
@@ -30,6 +30,42 @@ MATE.
  - search function
  - scheme support
 
+
+OPTIONS
+-------
+
+`-b`
+  Do not write "busy" to stdout while processing.
+
+`-c` *config-file*
+  Use the alternate system wide *config-file* instead of */etc/foo.conf*. This
+  overrides any `FOOCONF` environment variable.
+
+`-a`
+  In addition to the baz segments, also parse the blurfl headers.
+
+`-r`
+  Recursive mode. Operates as fast as lightning at the expense of a megabyte
+  of virtual memory.
+
+PROGRAM OPERATION
+------------------
+`<TAB>` - Go to the next open document.  
+`<F<n>>` - Go to the n-th document.  
+`ESC` - Escape current input mode.    
+`q` - Quit
+
+
+NAVIGATION INSIDE A DOCUMENT
+----------------------------
+`<h, left arrow>` - Scroll left.  
+`<l, right arrow>` - Scroll right.  
+`<j, down arrow>` - Scroll down.  
+`<k, up arrow>` - Scroll up.  
+`<pg up>` - Go to previous page.  
+`<pg dn>` - Go to next page.  
+`<g<n>RETURN>` - Go to page n.  
+`<+,->` - Zoom in, Zoom out.  
 
 OPTIONS
 -------
@@ -79,18 +115,19 @@ NAVIGATION INSIDE A DOCUMENT
 `s<X><RETURN> - Start search for string X.`
 `n` - Show next result.
 
+
 FILES
 -----
-*$(HOME)/.green.conf*     
-  Per user configuration file.  
-
-*/usr/local/etc/green.conf*  
-  The system wide configuration file.   
+*$(HOME)/.green.conf* 
+  Per user configuration file.
+*/usr/local/etc/green.conf*
+  The system wide configuration file. 
 
 
 AUTHOR
 ------
-The Green source code may be downloaded from <http://github.com/schandinat/green/>.   
+The Green source code may be downloaded from <http://github.com/schandinat/green/>.  
 Green is Licensed under GNU GPL version 3.  
 This man page was written for the Debian GNU / Linux System by Oz Nahum <nahumoz@gmail.com>.
+
 

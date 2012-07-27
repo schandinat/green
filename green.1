@@ -1,93 +1,69 @@
-.TH GREEN 1 "July 2012" "Debian GNU / Linux" "User Manuals"
-.SH NAME
-.PP
-green \- a lightweight PDF reader for the Framebuffer using libpoppler
-.SH SYNOPSIS
-.PP
-\fB\fCgreen\fR [\fB\fCoptions\fR] <\fB\fCPDF file 1\fR> \fI[PDF file 2]\fP ...
-.SH DESCRIPTION
-.PP
-\fB\fCgreen\fR is meant to be a light PDF reader for the Linux Framebuffer. 
+.TH UNTITLED 9 "" "Vendor Name" "User Commands"
+.ad l
+.nh
+.SH "GREEN 1 'JULY 2012' 'DEBIAN GNU / LINUX' 'USER MANUALS'"
+.SS NAME
+green - a lightweight PDF reader for the Framebuffer using libpoppler
+.SS SYNOPSIS
+\fBgreen\fR [\fBoptions\fR] <\fBPDF file 1\fR> \fI[PDF file 2]\fR ...
+.SS DESCRIPTION
+\fBgreen\fR is meant to be a light PDF reader for the Linux Framebuffer. 
 However, it can also be used inside a graphical X11 Session like GNOME or
-MATE. 
+MATE.
 .PP
-\fB\fCgreen\fR features:
-.RS
-.IP \(bu 2
+\fBgreen\fR features:
+.IP " \[bu] " 3
 uses libpoppler for PDF reading
-.IP \(bu 2
+.IP " \[bu] " 3
 uses SDL to support various frontends (including framebuffer)
-.IP \(bu 2
+.IP " \[bu] " 3
 multiple documents
-.IP \(bu 2
+.IP " \[bu] " 3
 single page mode
-.IP \(bu 2
+.IP " \[bu] " 3
 fit width, height or page
-.IP \(bu 2
+.IP " \[bu] " 3
 zooming
-.IP \(bu 2
+.IP " \[bu] " 3
 goto page
-.IP \(bu 2
+.IP " \[bu] " 3
 search function
-.IP \(bu 2
+.IP " \[bu] " 3
 scheme support
-.RE
-.SH OPTIONS
-.TP
-\fB\fC-b\fR
+.SS OPTIONS
+\fB-b\fR
 Do not write "busy" to stdout while processing.
-.TP
-\fB\fC-c\fR \fIconfig\-file\fP
-Use the alternate system wide \fIconfig\-file\fP instead of \fI/etc/foo.conf\fP. This
-overrides any \fB\fCFOOCONF\fR environment variable.
-.TP
-\fB\fC-a\fR
+.PP
+\fB-c\fR \fIconfig-file\fR
+Use the alternate system wide \fIconfig-file\fR instead of \fI/etc/foo.conf\fR. This
+overrides any \fBFOOCONF\fR environment variable.
+.PP
+\fB-a\fR
 In addition to the baz segments, also parse the blurfl headers.
-.TP
-\fB\fC-r\fR
+.PP
+\fB-r\fR
 Recursive mode. Operates as fast as lightning at the expense of a megabyte
 of virtual memory.
-.SH PROGRAM OPERATION
-.PP
-\fB\fC<TAB>\fR \- Go to the next open document.
-.br
-\fB\fC<F<n>>\fR \- Go to the n\-th document.
-.br
-\fB\fCESC\fR \- Escape current input mode.
-.br
-\fB\fCq\fR \- Quit
-.SH NAVIGATION INSIDE A DOCUMENT
-.PP
-\fB\fC<h, left arrow>\fR \- Scroll left.
-.br
-\fB\fC<l, right arrow>\fR \- Scroll right.
-.br
-\fB\fC<j, down arrow>\fR \- Scroll down.
-.br
-\fB\fC<k, up arrow>\fR \- Scroll up.
-.br
-\fB\fC<pg up>\fR \- Go to previous page.
-.br
-\fB\fC<pg dn>\fR \- Go to next page.
-.br
-\fB\fC<g<n>RETURN>\fR \- Go to page n.
-.br
-\fB\fC<+,->\fR \- Zoom in, Zoom out.  
-.SS SEARCHING
-.SH FILES
-.PP
-\fI$(HOME)/.green.conf\fP 
-  Per user configuration file.
-\fI/usr/local/etc/green.conf\fP
-  The system wide configuration file. 
-.SH AUTHOR
-.PP
-The Green source code may be downloaded from 
-.UR http://github.com/schandinat/green/
-.UE .
-.br
-Green is Licensed under GNU GPL version 3.
-.br
-This man page was written for the Debian GNU / Linux System by Oz Nahum 
-.MT nahumoz@gmail.com
-.ME .
+.SS "PROGRAM OPERATION"
+\fB<TAB>\fR - Go to the next open document.
+\fB<F<n>>\fR - Go to the n-th document.
+\fBESC\fR - Escape current input mode.  
+\fBq\fR - Quit
+.SS "NAVIGATION INSIDE A DOCUMENT"
+\fB<h, left arrow>\fR - Scroll left.
+\fB<l, right arrow>\fR - Scroll right.
+\fB<j, down arrow>\fR - Scroll down.
+\fB<k, up arrow>\fR - Scroll up.
+\fB<pg up>\fR - Go to previous page.
+\fB<pg dn>\fR - Go to next page.
+\fB<g<n>RETURN>\fR - Go to page n.
+\fB<+,->\fR - Zoom in, Zoom out.
+.SS FILES
+\fI$(HOME)/.green.conf\fR 
+Per user configuration file.
+\fI/usr/local/etc/green.conf\fR
+The system wide configuration file.
+.SS AUTHOR
+The Green source code may be downloaded from http://github.com/schandinat/green/.                      
+Green is Licensed under GNU GPL version 3.  
+This man page was written for the Debian GNU / Linux System by Oz Nahum nahumoz@gmail.com.
