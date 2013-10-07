@@ -87,7 +87,20 @@ If you don't need mouse in the console:
 
 Should work around the problem. Other wise you should be able to use the mouse in the 
 Framebuffer as none root user. 
+On Debian based distributions:
 
+Create new file `/etc/udev/rules.d/99-input.rules`:
+
+    # file /etc/udev/rules.d/99-input.rules
+    KERNEL=="mice", NAME="input/%k", MODE="664", GROUP="input"
+    KERNEL=="mouse*", NAME="input/%k", MODE="664", GROUP="input"
+
+Then issue:
+    
+    groupadd input
+    usermod -a -G input [your_username]
+
+Restart your computer and you should be able to use the mouse with SDL. 
 
 FILES
 -----
