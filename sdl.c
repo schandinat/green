@@ -15,7 +15,7 @@
  */
 
 #include <stdlib.h>
-#include "SDL.h"
+#include <SDL.h>
 #include "green.h"
 
 
@@ -284,9 +284,13 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 		case 'g':
 			state = GOTO;
 			break;
-		case 's':
+		/*case 's':
 			state = SEARCH;
-			break;
+			break;*/
+        case SDLK_s:
+            /* type s-SEARCHSTRING-<Enter> to search string */
+            state = SEARCH;
+            break;
 		case 'n':
 			if (!doc || !doc->search_str)
 				break;
@@ -307,7 +311,6 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 		case SDLK_k:
 			if (!doc)
 				break;
-			
 			Green_ScrollRelative( doc, 0, - display->h * rtd->step, display->w, display->h, 1 );
 			*flags |= FLAG_RENDER;
 			break;

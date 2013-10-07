@@ -79,6 +79,16 @@ NAVIGATION INSIDE A DOCUMENT
 `s<X><RETURN> - Start search for string X.`
 `n` - Show next result.
 
+### OTHER STUFF
+When starting green in Framebuffer console you might see an error regarding the mouse. 
+If you don't need mouse in the console:
+
+    SDL_NOMOUSE=1 ./green 
+
+Should work around the problem. Other wise you should be able to use the mouse in the 
+Framebuffer as none root user. 
+
+
 FILES
 -----
 *$(HOME)/.green.conf*     
