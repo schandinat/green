@@ -47,13 +47,12 @@ char*	FilenameToURI( char *filename )
 	return uri;
 }
 
-inline static
-void	GetScrollRegion( Green_Document *doc, int w, int h, int *scroll_w, int *scroll_h )
+void	Green_GetScrollRegion( Green_Document *doc, int w, int h, int *scroll_w, int *scroll_h )
 {
 	PopplerPage	*page;
 	
 	page = poppler_document_get_page( doc->doc, doc->page_cur );
-	Green_GetDimension( page, scroll_w, scroll_h, Green_Fit( doc, w, h ) * doc->finescale );
+	Green_GetDimension( page, scroll_w, scroll_h, Green_Fit( doc, w, h ) * doc->finescale, doc->rotation % 2 );
 	g_object_unref( G_OBJECT( page ) );
 	if (*scroll_w < w)
 		*scroll_w = 0;
@@ -99,6 +98,8 @@ int	Green_Open( Green_RTD *rtd, char *uri )
 	doc->page_cur = 0;
 	doc->xoffset = 0;
 	doc->yoffset = 0;
+	doc->mirrored = false;
+	doc->rotation = 0;
 	doc->fit_method = rtd->fit_method;
 	doc->finescale = 1;
 	doc->search_str = NULL;
@@ -157,7 +158,11 @@ double	Green_Fit( Green_Document *doc, int w, int h )
 		return 1;
 	
 	page = poppler_document_get_page( doc->doc, doc->page_cur );
-	poppler_page_get_size( page, &pwidth, &pheight );
+	if (doc->rotation % 2)
+		poppler_page_get_size( page, &pheight, &pwidth );
+	else
+		poppler_page_get_size( page, &pwidth, &pheight );
+	
 	if (doc->fit_method == WIDTH)
 		return w / pwidth;
 	else if (doc->fit_method == HEIGHT)
@@ -171,84 +176,203 @@ double	Green_Fit( Green_Document *doc, int w, int h )
 void	Green_ScrollRelative( Green_Document *doc, int x, int y, int w, int h, int bb_flag )
 {
 	unsigned char	bb_mode;
-	int	abs_x = x < 0 ? -x : x,
+	int	doc_dx, doc_dy, doc_max_x, doc_max_y,
+		abs_x = x < 0 ? -x : x,
 		abs_y = y < 0 ? -y : y,
 		max_x, max_y;
+	bool	left_border, right_border, top_border, bottom_border, bb_done = false;
+		
+	Green_GetScrollRegion( doc, w, h, &max_x, &max_y );
+	if (doc->rotation % 2)
+	{
+		doc_max_x = max_y;
+		doc_max_y = max_x;
+	}
+	else
+	{
+		doc_max_x = max_x;
+		doc_max_y = max_y;
+	}
+
+	if (doc->rotation == 1)
+	{
+		doc_dx = doc->mirrored ? -y : y;
+		doc_dy = -x;
+		left_border = doc->yoffset == doc_max_y;
+		right_border = doc->yoffset == 0;
+		if (doc->mirrored)
+		{
+			top_border = doc->xoffset == doc_max_x;
+			bottom_border = doc->xoffset == 0;
+		}
+		else
+		{
+			top_border = doc->xoffset == 0;
+			bottom_border = doc->xoffset == doc_max_x;
+		}
+	}
+	else if (doc->rotation == 2)
+	{
+		doc_dx = -x;
+		doc_dy = doc->mirrored ? y : -y;
+		left_border = doc->xoffset == doc_max_x;
+		right_border = doc->xoffset == 0;
+		if (doc->mirrored)
+		{
+			top_border = doc->yoffset == 0;
+			bottom_border = doc->yoffset == doc_max_y;
+		}
+		else
+		{
+			top_border = doc->yoffset == doc_max_y;
+			bottom_border = doc->yoffset == 0;
+		}
+	}
+	else if (doc->rotation == 3)
+	{
+		doc_dx = doc->mirrored ? y : -y;
+		doc_dy = x;
+		left_border = doc->yoffset == 0;
+		right_border = doc->yoffset == doc_max_y;
+		if (doc->mirrored)
+		{
+			top_border = doc->xoffset == 0;
+			bottom_border = doc->xoffset == doc_max_x;
+		}
+		else
+		{
+			top_border = doc->xoffset == doc_max_x;
+			bottom_border = doc->xoffset == 0;
+		}
+	}
+	else
+	{
+		doc_dx = x;
+		doc_dy = doc->mirrored ? -y : y;
+		left_border = doc->xoffset == 0;
+		right_border = doc->xoffset == doc_max_x;
+		if (doc->mirrored)
+		{
+			top_border = doc->yoffset == doc_max_y;
+			bottom_border = doc->yoffset == 0;
+		}
+		else
+		{
+			top_border = doc->yoffset == 0;
+			bottom_border = doc->yoffset == doc_max_y;
+		}
+	}
 	
-	GetScrollRegion( doc, w, h, &max_x, &max_y );
 	if (bb_flag)
 	{
-		if (abs_x > abs_y && x > 0 && doc->xoffset >= max_x)
+		if (abs_x > abs_y && x > 0 && right_border)
 		{
 			if (!(doc->bb&0xF0) && (doc->bb&0x03))
 			{
 				bb_mode = doc->bb&0x03;
 				if (bb_mode == 1)
-					Green_GotoPage( doc, doc->page_cur + 1 );
+					bb_done = Green_GotoPage( doc, doc->page_cur + 1, false );
 				else if (bb_mode == 2)
-					Green_GotoPage( doc, doc->page_cur - 1 );
+					bb_done = Green_GotoPage( doc, doc->page_cur - 1, false );
+				
+				if (bb_done)
+				{
+					Green_GetScrollRegion( doc, w, h, &max_x, &max_y );
+					if (doc->rotation == 1)
+						doc->yoffset = 0;
+					else if (doc->rotation == 2)
+						doc->xoffset = max_x;
+					else if (doc->rotation == 3)
+						doc->yoffset = max_x;
+					else
+						doc->xoffset = 0;
+					
+					Green_ValidateOffset( doc, w, h );
+				}
 			}
 			
 			return;
 		}
-		else if (abs_x > abs_y && x < 0 && doc->xoffset <= 0)
+		else if (abs_x > abs_y && x < 0 && left_border)
 		{
 			if (!(doc->bb&0xF0) && (doc->bb&0x03))
 			{
 				bb_mode = doc->bb&0x03;
 				if (bb_mode == 1)
-				{
-					if (Green_GotoPage( doc, doc->page_cur - 1 ))
-					{
-						GetScrollRegion( doc, w, h, &max_x, &max_y );
-						doc->xoffset = max_x;
-					}
-				}
+					bb_done = Green_GotoPage( doc, doc->page_cur - 1, false );
 				else if (bb_mode == 2)
+					bb_done = Green_GotoPage( doc, doc->page_cur + 1, false );
+				
+				if (bb_done)
 				{
-					if (Green_GotoPage( doc, doc->page_cur + 1 ))
-					{
-						GetScrollRegion( doc, w, h, &max_x, &max_y );
+					Green_GetScrollRegion( doc, w, h, &max_x, &max_y );
+					if (doc->rotation == 1)
+						doc->yoffset = max_x;
+					else if (doc->rotation == 2)
+						doc->xoffset = 0;
+					else if (doc->rotation == 3)
+						doc->yoffset = 0;
+					else
 						doc->xoffset = max_x;
-					}
+					
+					Green_ValidateOffset( doc, w, h );
 				}
+
 			}
 			
 			return;
 		}
-		else if (abs_x < abs_y && y > 0 && doc->yoffset >= max_y)
+		else if (abs_x < abs_y && y > 0 && bottom_border)
 		{
 			if (!(doc->bb&0xF0) && (doc->bb&0x0C))
 			{
 				bb_mode = (doc->bb>>2)&0x03;
 				if (bb_mode == 1)
-					Green_GotoPage( doc, doc->page_cur + 1 );
+					bb_done = Green_GotoPage( doc, doc->page_cur + 1, false );
 				else if (bb_mode == 2)
-					Green_GotoPage( doc, doc->page_cur - 1 );
+					bb_done = Green_GotoPage( doc, doc->page_cur - 1, false );
+				
+				if (bb_done)
+				{
+					Green_GetScrollRegion( doc, w, h, &max_x, &max_y );
+					if (doc->rotation == 1)
+						doc->xoffset = doc->mirrored ? max_y : 0;
+					else if (doc->rotation == 2)
+						doc->yoffset = doc->mirrored ? 0 : max_y;
+					else if (doc->rotation == 3)
+						doc->xoffset = doc->mirrored ? 0 : max_y;
+					else
+						doc->yoffset = doc->mirrored ? max_y : 0;
+					
+					Green_ValidateOffset( doc, w, h );
+				}
 			}
 			
 			return;
 		}
-		else if (abs_x < abs_y && y < 0 && doc->yoffset <= 0)
+		else if (abs_x < abs_y && y < 0 && top_border)
 		{
 			if (!(doc->bb&0xF0) && (doc->bb&0x0C))
 			{
 				bb_mode = (doc->bb>>2)&0x03;
 				if (bb_mode == 1)
-				{
-					if (Green_GotoPage( doc, doc->page_cur - 1 ))
-					{
-						GetScrollRegion( doc, w, h, &max_x, &max_y );
-						doc->yoffset = max_y;
-					}
-				}
+					bb_done = Green_GotoPage( doc, doc->page_cur - 1, false );
 				else if (bb_mode == 2)
+					bb_done = Green_GotoPage( doc, doc->page_cur + 1, false );
+				
+				if (bb_done)
 				{
-					if (Green_GotoPage( doc, doc->page_cur + 1 ))
-					{
-						GetScrollRegion( doc, w, h, &max_x, &max_y );
-						doc->yoffset = max_y;
-					}
+					Green_GetScrollRegion( doc, w, h, &max_x, &max_y );
+					if (doc->rotation == 1)
+						doc->xoffset = doc->mirrored ? 0 : max_y;
+					else if (doc->rotation == 2)
+						doc->yoffset = doc->mirrored ? max_y : 0;
+					else if (doc->rotation == 3)
+						doc->xoffset = doc->mirrored ? max_y : 0;
+					else
+						doc->yoffset = doc->mirrored ? 0 : max_y;
+					
+					Green_ValidateOffset( doc, w, h );
 				}
 			}
 			
@@ -256,20 +380,9 @@ void	Green_ScrollRelative( Green_Document *doc, int x, int y, int w, int h, int 
 		}
 	}
 	
-	if (x <= 0 && abs_x > doc->xoffset )
-		doc->xoffset = 0;
-	else if (x >= 0 && abs_x > max_x - doc->xoffset)
-		doc->xoffset = max_x;
-	else
-		doc->xoffset += x;
-	
-	if (y <= 0 && abs_y > doc->yoffset )
-		doc->yoffset = 0;
-	else if (y >= 0 && abs_y > max_y - doc->yoffset)
-		doc->yoffset = max_y;
-	else
-		doc->yoffset += y;
-	
+	doc->xoffset += doc_dx;
+	doc->yoffset += doc_dy;
+	Green_ValidateOffset( doc, w, h );
 	return;
 }
 
@@ -283,28 +396,27 @@ void	Green_Zoom( Green_Document *doc, int width, int height, double new_fs )
 	old_tscale = Green_Fit(doc, width, height) * doc->finescale;
 	doc->finescale = new_fs;
 	new_tscale = Green_Fit(doc, width, height) * new_fs;
-	Green_GetDimension( page, &old_w, &old_h, old_tscale );
-	Green_GetDimension( page, &new_w, &new_h, new_tscale );
+	Green_GetDimension( page, &old_w, &old_h, old_tscale, doc->rotation % 2 );
+	Green_GetDimension( page, &new_w, &new_h, new_tscale, doc->rotation % 2 );
 	g_object_unref( G_OBJECT( page ) );
 	
-	if (new_w < width)
-		doc->xoffset = 0;
-	else if (old_w < width)
-		doc->xoffset = doc->xoffset * new_tscale / old_tscale;
-	else
+	if (doc->rotation % 2 == 0)
 		doc->xoffset = doc->xoffset * new_tscale / old_tscale
 			+ (new_tscale - old_tscale) * width / 2 / new_tscale;
-	
-	if (new_h < height )
-		doc->yoffset = 0;
-	else if (old_h < height)
-		doc->yoffset = doc->yoffset * new_tscale / old_tscale;
 	else
-		doc->yoffset = doc->yoffset * new_tscale / old_tscale
+		doc->xoffset = doc->xoffset * new_tscale / old_tscale
 			+ (new_tscale - old_tscale) * height / 2 / new_tscale;
 	
+	if (doc->rotation % 2 == 0)
+		doc->yoffset = doc->yoffset * new_tscale / old_tscale
+			+ (new_tscale - old_tscale) * height / 2 / new_tscale;
+	else
+		doc->yoffset = doc->yoffset * new_tscale / old_tscale
+			+ (new_tscale - old_tscale) * width / 2 / new_tscale;
+	
+	Green_ValidateOffset( doc, width, height );
 	return;
-}	
+}
 
 int	Green_FindNext( Green_Document *doc, int start )
 {

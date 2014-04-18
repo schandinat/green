@@ -18,6 +18,7 @@
 #define __GREEN_H__
 
 
+#include <stdbool.h>
 #include "glib/poppler.h"
 
 
@@ -42,6 +43,12 @@ typedef struct
 	char	*uri;
 	int	page_count, page_cur,
 		xoffset, yoffset;
+	bool	mirrored;	// is the document mirrored horizontally?
+	int	rotation;
+		// 0: not rotated
+		// 1: rotated right by 90°
+		// 2: rotated right by 180°
+		// 3: rotated right by 270°
 	Green_FitMethod	fit_method;
 	double	finescale;
 	char	*search_str;
@@ -79,6 +86,7 @@ int	Green_Open( Green_RTD *rtd, char *uri );
 void	Green_Close( Green_RTD *rtd, int id );
 double	Green_Fit( Green_Document *doc, int width, int height );
 void	Green_ScrollRelative( Green_Document *doc, int x, int y, int w, int h, int bb_flag );
+void	Green_GetScrollRegion( Green_Document *doc, int w, int h, int *scroll_w, int *scroll_h );
 void	Green_Zoom( Green_Document *doc, int width, int height, double new_fs );
 int	Green_FindNext( Green_Document *doc, int start );
 
@@ -90,14 +98,44 @@ int	Green_IsDocValid( Green_RTD *rtd, int id )
 }
 
 inline static
-void	Green_GetDimension( PopplerPage *page, int *w, int *h, double tscale )
+void	Green_GetDimension( PopplerPage *page, int *w, int *h, double tscale, bool rotated )
 {
 	double	pwidth, pheight;
 	
 	poppler_page_get_size( page, &pwidth, &pheight );
-	*w = pwidth * tscale;
-	*h = pheight * tscale;
+	if (rotated)
+	{
+		*w = pheight * tscale;
+		*h = pwidth * tscale;
+	}
+	else
+	{
+		*w = pwidth * tscale;
+		*h = pheight * tscale;
+	}
+	
 	return;
+}
+
+inline static
+void	Green_ValidateOffset( Green_Document *doc, int width, int height )
+{
+	int doc_max_x, doc_max_y;
+	
+	if (doc->rotation % 2)
+		Green_GetScrollRegion( doc, width, height, &doc_max_y, &doc_max_x );
+	else
+		Green_GetScrollRegion( doc, width, height, &doc_max_x, &doc_max_y );
+	
+	if (doc->xoffset < 0)
+		doc->xoffset = 0;
+	else if (doc->xoffset > doc_max_x)
+		doc->xoffset = doc_max_x;
+	
+	if (doc->yoffset < 0)
+		doc->yoffset = 0;
+	else if (doc->yoffset > doc_max_y)
+		doc->yoffset = doc_max_y;
 }
 
 inline static
@@ -116,15 +154,50 @@ void	Green_NextVaildDoc( Green_RTD *rtd )
 }
 
 inline static
-int	Green_GotoPage( Green_Document *doc, int page )
+int	Green_GotoPage( Green_Document *doc, int page, bool set_offset )
 {
 	if (page < 0 || page >= doc->page_count)
 		return 0;
 	
 	doc->page_cur = page;
-	doc->xoffset = 0;
-	doc->yoffset = 0;
+	if (set_offset)
+	{
+		doc->xoffset = 0;
+		doc->yoffset = 0;
+	}
+	
 	return 1;
+}
+
+inline static
+void	Green_RotateRight( Green_Document *doc )
+{
+	if (doc->mirrored)
+		doc->rotation = (doc->rotation + 3) % 4;
+	else
+		doc->rotation = (doc->rotation + 1) % 4;
+}
+
+inline static
+void	Green_RotateLeft( Green_Document *doc )
+{
+	if (doc->mirrored)
+		doc->rotation = (doc->rotation + 1) % 4;
+	else
+		doc->rotation = (doc->rotation + 3) % 4;
+}
+
+inline static
+void	Green_MirrorH( Green_Document *doc )
+{
+	doc->mirrored = !doc->mirrored;
+}
+
+inline static
+void	Green_MirrorV( Green_Document *doc )
+{
+	doc->mirrored = !doc->mirrored;
+	doc->rotation = (doc->rotation + 2) % 4;
 }
 
 

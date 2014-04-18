@@ -25,7 +25,7 @@
 
 typedef enum
 {
-	NORMAL, GOTO, SEARCH, FIT
+	NORMAL, GOTO, SEARCH, FIT, ROTATE, MIRROR
 	
 }	RState;
 
@@ -128,12 +128,12 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 	guint	i, n;
 	GList	*list = NULL;
 	Uint32	*src, *dst;
-	int	x, y, rowstride, w, h;
+	int	x, y, rowstride, w, h, dir_x, dir_y;
 
 	if (doc->search_str)
 		list = poppler_page_find_text( page, doc->search_str );
 
-	Green_GetDimension( page, &w, &h, tscale );
+	Green_GetDimension( page, &w, &h, tscale, false );
 	surface = cairo_image_surface_create( CAIRO_FORMAT_ARGB32, w, h );
 	context = cairo_create( surface );
 	cairo_save( context );
@@ -143,22 +143,64 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 	cairo_set_operator( context, CAIRO_OPERATOR_DEST_OVER );
 	cairo_set_source_rgb( context, 1., 1., 1. );
 	cairo_paint( context );
+	if (doc->rotation == 1)
+	{
+		dir_x = -1;
+		dir_y = 1;
+	}
+	else if (doc->rotation == 2)
+	{
+		dir_x = -1;
+		dir_y = -1;
+	}
+	else if (doc->rotation == 3)
+	{
+		dir_x = 1;
+		dir_y = -1;
+	}
+	else
+		dir_x = dir_y = 1;
+
+	if (doc->mirrored)
+		dir_y *= -1;
+
 	pixels = cairo_image_surface_get_data( surface );
 	rowstride = cairo_image_surface_get_stride( surface );
 	SDL_LockSurface( display );
-	for (y = 0; y < dest.h; y++)
+	if (doc->rotation % 2)
 	{
-		src = pixels + (y + yoff) * rowstride + xoff * 4;
-		dst = display->pixels + (dest.y + y) * display->pitch
-			+ dest.x * fmt.BytesPerPixel;
-		for (x = 0; x < dest.w; x++)
+		for (y = 0; y < dest.h; y++)
 		{
-			*dst = ((((*src>>16)&0xFF)>>fmt.Rloss)<<fmt.Rshift)
-				| ((((*src>>8)&0xFF)>>fmt.Gloss)<<fmt.Gshift)
-				| (((*src&0xFF)>>fmt.Bloss)<<fmt.Bshift);
-			
-			src++;
-			dst = (void*)dst + fmt.BytesPerPixel;
+			src = pixels + (xoff + dir_y * y + (dir_y < 0 ? dest.h - 1 : 0)) * 4 + (yoff + (dir_x < 0 ? dest.w - 1 : 0)) * rowstride;
+			dst = display->pixels + (dest.y + y) * display->pitch
+				+ dest.x * fmt.BytesPerPixel;
+			for (x = 0; x < dest.w; x++)
+			{
+				*dst = ((((*src>>16)&0xFF)>>fmt.Rloss)<<fmt.Rshift)
+					| ((((*src>>8)&0xFF)>>fmt.Gloss)<<fmt.Gshift)
+					| (((*src&0xFF)>>fmt.Bloss)<<fmt.Bshift);
+				
+				src = (void*)src + dir_x * rowstride;
+				dst = (void*)dst + fmt.BytesPerPixel;
+			}
+		}
+	}
+	else
+	{
+		for (y = 0; y < dest.h; y++)
+		{
+			src = pixels + (yoff + dir_y * y + (dir_y < 0 ? dest.h - 1 : 0)) * rowstride + (xoff + (dir_x < 0 ? dest.w - 1 : 0)) * 4;
+			dst = display->pixels + (dest.y + y) * display->pitch
+				+ dest.x * fmt.BytesPerPixel;
+			for (x = 0; x < dest.w; x++)
+			{
+				*dst = ((((*src>>16)&0xFF)>>fmt.Rloss)<<fmt.Rshift)
+					| ((((*src>>8)&0xFF)>>fmt.Gloss)<<fmt.Gshift)
+					| (((*src&0xFF)>>fmt.Bloss)<<fmt.Bshift);
+				
+				src += dir_x;
+				dst = (void*)dst + fmt.BytesPerPixel;
+			}
 		}
 	}
 	
@@ -180,42 +222,103 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 			rect->y1 *= tscale;
 			rect->x2 *= tscale;
 			rect->y2 *= tscale;
-			if (rect->x1 > xoff + dest.w)
-				continue;
-			else if (rect->x1 < xoff)
-				rect->x1 = xoff;
-			
-			if (rect->x2 < xoff)
-				continue;
-			else if (rect->x2 > xoff + dest.w)
-				rect->x2 = xoff + dest.w;
-			
-			if (rect->y1 > yoff + dest.h)
-				continue;
-			else if (rect->y1 < yoff)
-				rect->y1 = yoff;
-			
-			if (rect->y2 < yoff)
-				continue;
-			else if (rect->y2 > yoff + dest.h)
-				rect->y2 = yoff + dest.h;
-			
 			rect->x1 -= xoff;
-			rect->x2 -= xoff;
 			rect->y1 -= yoff;
+			rect->x2 -= xoff;
 			rect->y2 -= yoff;
-			for (y = rect->y1; y < (int)rect->y2; y++)
+			if (doc->rotation % 2)
 			{
-				src = pixels + (y + yoff) * rowstride + (xoff + (int)rect->x1) * 4;
-				dst = display->pixels + (dest.y + y) * display->pitch + (dest.x + (int)rect->x1) * fmt.BytesPerPixel;
-				for (x = rect->x1; x <  (int)rect->x2; x++)
+				tmp_d = rect->x1;
+				rect->x1 = rect->y1;
+				rect->y1 = tmp_d;
+				tmp_d = rect->x2;
+				rect->x2 = rect->y2;
+				rect->y2 = tmp_d;
+			}
+
+			if (doc->mirrored)
+			{
+				tmp_d = rect->y1;
+				rect->y1 = dest.h - rect->y2;
+				rect->y2 = dest.h - tmp_d;
+			}
+
+			if (doc->rotation == 1)
+			{
+				tmp_d = rect->x1;
+				rect->x1 = dest.w - rect->x2;
+				rect->x2 = dest.w - tmp_d;
+			}
+			else if (doc->rotation == 2)
+			{
+				tmp_d = rect->x1;
+				rect->x1 = dest.w - rect->x2;
+				rect->x2 = dest.w - tmp_d;
+				tmp_d = rect->y1;
+				rect->y1 = dest.h - rect->y2;
+				rect->y2 = dest.h - tmp_d;
+			}
+			else if (doc->rotation == 3)
+			{
+				tmp_d = rect->y1;
+				rect->y1 = dest.h - rect->y2;
+				rect->y2 = dest.h - tmp_d;
+			}
+
+			if (rect->x1 > dest.w)
+				continue;
+			else if (rect->x1 < 0)
+				rect->x1 = 0;
+			
+			if (rect->x2 < 0)
+				continue;
+			else if (rect->x2 > dest.w)
+				rect->x2 = dest.w;
+			
+			if (rect->y1 > dest.h)
+				continue;
+			else if (rect->y1 < 0)
+				rect->y1 = 0;
+			
+			if (rect->y2 < 0)
+				continue;
+			else if (rect->y2 > dest.h)
+				rect->y2 = dest.h;
+			
+			if (doc->rotation % 2)
+			{
+				for (y = rect->y1; y < (int)rect->y2; y++)
 				{
-					*dst = ((((((*src>>16)&0xFF) * ia + ar) / 256)>>fmt.Rloss)<<fmt.Rshift)
-						| ((((((*src>>8)&0xFF) * ia + ag) / 256)>>fmt.Gloss)<<fmt.Gshift)
-						| (((((*src&0xFF) * ia + ab) / 256)>>fmt.Bloss)<<fmt.Bshift);
-					
-					src++;
-					dst = (void*)dst + fmt.BytesPerPixel;
+					src = pixels + (xoff + dir_y * y + (dir_y < 0 ? dest.h - 1 : 0)) * 4 + (yoff + dir_x * (int)rect->x1 + (dir_x < 0 ? dest.w - 1 : 0)) * rowstride;
+					dst = display->pixels + (dest.y + y) * display->pitch
+						+ (dest.x + (int)rect->x1) * fmt.BytesPerPixel;
+					for (x = rect->x1; x < (int)rect->x2; x++)
+					{
+						*dst = ((((((*src>>16)&0xFF) * ia + ar) / 256)>>fmt.Rloss)<<fmt.Rshift)
+							| ((((((*src>>8)&0xFF) * ia + ag) / 256)>>fmt.Gloss)<<fmt.Gshift)
+							| (((((*src&0xFF) * ia + ab) / 256)>>fmt.Bloss)<<fmt.Bshift);
+						
+						src = (void*)src + dir_x * rowstride;
+						dst = (void*)dst + fmt.BytesPerPixel;
+					}
+				}
+			}
+			else
+			{
+				for (y = rect->y1; y < (int)rect->y2; y++)
+				{
+					src = pixels + (yoff + dir_y * y + (dir_y < 0 ? dest.h - 1 : 0)) * rowstride + (xoff + dir_x * (int)rect->x1 + (dir_x < 0 ? dest.w - 1 : 0)) * 4;
+					dst = display->pixels + (dest.y + y) * display->pitch
+						+ (dest.x + (int)rect->x1) * fmt.BytesPerPixel;
+					for (x = rect->x1; x < (int)rect->x2; x++)
+					{
+						*dst = ((((((*src>>16)&0xFF) * ia + ar) / 256)>>fmt.Rloss)<<fmt.Rshift)
+							| ((((((*src>>8)&0xFF) * ia + ag) / 256)>>fmt.Gloss)<<fmt.Gshift)
+							| (((((*src&0xFF) * ia + ab) / 256)>>fmt.Bloss)<<fmt.Bshift);
+						
+						src += dir_x;
+						dst = (void*)dst + fmt.BytesPerPixel;
+					}
 				}
 			}
 		}
@@ -251,7 +354,7 @@ void	Render( Green_RTD *rtd )
 	doc = rtd->docs[rtd->doc_cur];
 	tscale = Green_Fit( doc, display->w, display->h ) * doc->finescale;
 	page = poppler_document_get_page( doc->doc, doc->page_cur );
-	Green_GetDimension( page, &w, &h, tscale );
+	Green_GetDimension( page, &w, &h, tscale, doc->rotation % 2 );
 	rect.w = w > display->w ? display->w : w;
 	rect.h = h > display->h ? display->h : h;
 	rect.x = (display->w - rect.w) / 2;
@@ -357,16 +460,28 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_PAGEUP:
-			if (!doc || !Green_GotoPage( doc, doc->page_cur - 1  ))
+			if (!doc || !Green_GotoPage( doc, doc->page_cur - 1, true ))
 				break;
 			
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_PAGEDOWN:
-			if (!doc || !Green_GotoPage( doc, doc->page_cur + 1  ))
+			if (!doc || !Green_GotoPage( doc, doc->page_cur + 1, true ))
 				break;
 			
 			*flags |= FLAG_RENDER;
+			break;
+		case SDLK_m:
+			if (!doc)
+				break;
+			
+			state = MIRROR;
+			break;
+		case SDLK_r:
+			if (!doc)
+				break;
+			
+			state = ROTATE;
 			break;
 		case '+':
 			if (!doc)
@@ -577,6 +692,42 @@ int	Green_SDL_Main( Green_RTD *rtd )
 							flags |= FLAG_RENDER;
 						}
 					}
+					else if (state == MIRROR)
+					{
+						state = NORMAL;
+						if (!Green_IsDocValid( rtd, rtd->doc_cur ))
+							break;
+						
+						if (event.key.keysym.sym == 'h')
+						{
+							Green_MirrorH( rtd->docs[rtd->doc_cur] );
+							flags |= FLAG_RENDER;
+						}
+						else if (event.key.keysym.sym == 'v')
+						{
+							Green_MirrorV( rtd->docs[rtd->doc_cur] );
+							flags |= FLAG_RENDER;
+						}
+					}
+					else if (state == ROTATE)
+					{
+						state = NORMAL;
+						if (!Green_IsDocValid( rtd, rtd->doc_cur ))
+							break;
+						
+						if (event.key.keysym.sym == 'l')
+						{
+							Green_RotateLeft( rtd->docs[rtd->doc_cur] );
+							Green_ValidateOffset( rtd->docs[rtd->doc_cur], display->w, display->h );
+							flags |= FLAG_RENDER;
+						}
+						else if (event.key.keysym.sym == 'r')
+						{
+							Green_RotateRight( rtd->docs[rtd->doc_cur] );
+							Green_ValidateOffset( rtd->docs[rtd->doc_cur], display->w, display->h );
+							flags |= FLAG_RENDER;
+						}
+					}
 					
 					break;
 				case SDL_VIDEORESIZE:
@@ -589,7 +740,7 @@ int	Green_SDL_Main( Green_RTD *rtd )
 					}
 					
 					if (Green_IsDocValid( rtd, rtd->doc_cur ))
-						Green_ScrollRelative( rtd->docs[rtd->doc_cur], 0, 0, display->w, display->h, 1 );
+						Green_ValidateOffset( rtd->docs[rtd->doc_cur], display->w, display->h );
 					
 					flags |= FLAG_RENDER;
 					break;
