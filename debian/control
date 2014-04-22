@@ -1,0 +1,21 @@
+Source: green
+Architecture: any
+Maintainer: Oz Nahum <nahumoz@gmail.com>
+Build-Depends: libpoppler-dev (>= 0.18), libpoppler-glib-dev, libsdl1.2-dev
+Standards-Version: 3.9.2
+
+
+
+Package: green
+Version: 0.2-1
+Architecture: any
+Maintainer: Oz Nahum <nahumoz@gmail.com>
+Installed-Size: 64
+Depends: libc6 (>= 2.1), libcairo2 (>= 1.2.4), libglib2.0-0 (>= 2.16.0), libgtk2.0-0 (>= 2.8.0), libpango1.0-0 (>= 1.14.0), libpoppler-glib4, libsdl1.2debian (>= 1.2.10-1)
+Section: base
+Priority: extra
+Homepage: http://wiki.github.com/schandinat/green
+Description: green - the PDF reader
+ green is a PDF reader that works on all displays SDL can work on including
+ but not limited to framebuffer. It aims to be efficent and small and avoids
+ to waste display space.
