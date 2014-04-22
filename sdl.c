@@ -398,13 +398,10 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 		case 'g':
 			state = GOTO;
 			break;
-		/*case 's':
+		case SDLK_s:
+			/* type s-SEARCHSTRING-<Enter> to search string */
 			state = SEARCH;
-			break;*/
-        case SDLK_s:
-            /* type s-SEARCHSTRING-<Enter> to search string */
-            state = SEARCH;
-            break;
+			break;
 		case 'n':
 			if (!doc || !doc->search_str)
 				break;
