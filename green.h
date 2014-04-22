@@ -39,6 +39,14 @@ typedef struct
 
 typedef struct
 {
+	int	page;
+	double	tscale;
+	cairo_surface_t	*surface;
+	
+}	Green_PageBuffer;
+
+typedef struct
+{
 	PopplerDocument	*doc;
 	char	*uri;
 	int	page_count, page_cur,
@@ -53,6 +61,7 @@ typedef struct
 	double	finescale;
 	char	*search_str;
 	unsigned char	bb;
+	Green_PageBuffer	cache;
 	
 }	Green_Document;
 

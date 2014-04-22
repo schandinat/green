@@ -104,6 +104,9 @@ int	Green_Open( Green_RTD *rtd, char *uri )
 	doc->finescale = 1;
 	doc->search_str = NULL;
 	doc->bb = rtd->bb;
+	doc->cache.page = -1;
+	doc->cache.tscale = 0;
+	doc->cache.surface = NULL;
 	for (i = 0; i < rtd->doc_count; i++)
 	{
 		if (rtd->docs[i])

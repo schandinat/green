@@ -133,16 +133,29 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 	if (doc->search_str)
 		list = poppler_page_find_text( page, doc->search_str );
 
-	Green_GetDimension( page, &w, &h, tscale, false );
-	surface = cairo_image_surface_create( CAIRO_FORMAT_ARGB32, w, h );
-	context = cairo_create( surface );
-	cairo_save( context );
-	cairo_scale( context, tscale, tscale );
-	poppler_page_render( page, context );
-	cairo_restore( context );
-	cairo_set_operator( context, CAIRO_OPERATOR_DEST_OVER );
-	cairo_set_source_rgb( context, 1., 1., 1. );
-	cairo_paint( context );
+	if (doc->cache.surface && doc->cache.page == doc->page_cur && doc->cache.tscale == tscale)
+		surface = doc->cache.surface;
+	else
+	{
+		Green_GetDimension( page, &w, &h, tscale, false );
+		surface = cairo_image_surface_create( CAIRO_FORMAT_ARGB32, w, h );
+		context = cairo_create( surface );
+		cairo_save( context );
+		cairo_scale( context, tscale, tscale );
+		poppler_page_render( page, context );
+		cairo_restore( context );
+		cairo_set_operator( context, CAIRO_OPERATOR_DEST_OVER );
+		cairo_set_source_rgb( context, 1., 1., 1. );
+		cairo_paint( context );
+		cairo_destroy( context );
+		if (doc->cache.surface)
+			cairo_surface_destroy( doc->cache.surface );
+
+		doc->cache.surface = surface;
+		doc->cache.page = doc->page_cur;
+		doc->cache.tscale = tscale;
+	}
+
 	if (doc->rotation == 1)
 	{
 		dir_x = -1;
@@ -327,8 +340,6 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 	}
 	
 	SDL_UnlockSurface( display );
-	cairo_surface_destroy( surface );
-	cairo_destroy( context );
 	return;
 }
 
