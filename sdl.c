@@ -198,6 +198,7 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 		doc->cache.surface = surface;
 		doc->cache.page = doc->page_cur;
 		doc->cache.tscale = tscale;
+		doc->cache.rotation = doc->rotation;
 	}
 
 	if (doc->rotation == 1)
