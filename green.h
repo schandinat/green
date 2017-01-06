@@ -41,6 +41,7 @@ typedef struct
 {
 	int	page;
 	double	tscale;
+	int	rotation;
 	cairo_surface_t	*surface;
 	
 }	Green_PageBuffer;
@@ -58,6 +59,7 @@ typedef struct
 		// 2: rotated right by 180°
 		// 3: rotated right by 270°
 	Green_FitMethod	fit_method;
+	double	pixelheight;
 	double	finescale;
 	int	palettehack;
 	char	*search_str;
@@ -74,6 +76,7 @@ typedef struct
 	Green_RGBA	c_background, c_highlight;
 	Green_FitMethod	fit_method;
 	double	step, zoomstep;
+	double	pixelheight;
 	int	palettehack;
 	unsigned char	bb;
 	
@@ -109,7 +112,7 @@ int	Green_IsDocValid( Green_RTD *rtd, int id )
 }
 
 inline static
-void	Green_GetDimension( PopplerPage *page, int *w, int *h, double tscale, bool rotated )
+void	Green_GetDimension( PopplerPage *page, int *w, int *h, double tscale, double pixelheight, bool rotated )
 {
 	double	pwidth, pheight;
 	
@@ -117,12 +120,12 @@ void	Green_GetDimension( PopplerPage *page, int *w, int *h, double tscale, bool 
 	if (rotated)
 	{
 		*w = pheight * tscale;
-		*h = pwidth * tscale;
+		*h = pwidth * tscale / pixelheight;
 	}
 	else
 	{
 		*w = pwidth * tscale;
-		*h = pheight * tscale;
+		*h = pheight * tscale / pixelheight;
 	}
 	
 	return;

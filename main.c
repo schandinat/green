@@ -30,6 +30,7 @@
 #define SCHEME_HIGHLIGHTCOLOR		 7
 #define SCHEME_HIGHLIGHTALPHA		 8
 #define SCHEME_CURSORBORDER		 9
+#define SCHEME_PIXELHEIGHT		10
 #define SCHEME_MOUSEFLAGS		11
 #define SCHEME_PALETTEHACK		12
 
@@ -65,6 +66,7 @@ struct SchemeProperty	scheme_property[] =
 	{"Height", SCHEME_HEIGHT, 0},
 	{"Fullscreen", SCHEME_FULLSCREEN, 0},
 	{"Fit", SCHEME_FIT, 0},
+	{"Pixelheight", SCHEME_PIXELHEIGHT, 0},
 	{"Cursor.Visibility", SCHEME_CURSORVISIBILITY, 0},
 	{"Cursor.Border", SCHEME_CURSORBORDER, 0},
 	{"Palettehack", SCHEME_PALETTEHACK, 0},
@@ -85,6 +87,7 @@ const char	*help_text =
 "    -no-fullscreen              to startup in window mode\n"
 "    -width=<width>              to specify the window width (in pixels)\n"
 "    -height=<height>            to specify the window height (in pixels)\n"
+"    -pixeleheight=<prop>        height of pixel in proprtion to its width\n"
 "    -palettehack                hack for speed on palette displays\n"
 "    -nomouse                    disable mouse\n"
 "    -help                       shows this help\n"
@@ -401,6 +404,14 @@ int	EvalProperty( Green_RTD *rtd, int id, char *arg )
 			else
 				res = -1;
 			
+			break;
+		case SCHEME_PIXELHEIGHT:
+			tmpd = strtod( arg, &tmpc );
+			if (*tmpc || tmpd < 0)
+				res = -1;
+			else
+				rtd->pixelheight = tmpd;
+
 			break;
 		case SCHEME_PALETTEHACK:
 			tmpd = strtol( arg, &tmpc, 10 );
@@ -910,6 +921,7 @@ int	main( int argc, char *argv[] )
 	struct SchemeArray	schemes;
 	char	*opt, *config_file = NULL, *default_scheme = NULL, *current_scheme = NULL;
 	int i, err = 0;
+	char c;
 	
 	rtd.flags = 0;
 	rtd.width = 0;
@@ -928,6 +940,7 @@ int	main( int argc, char *argv[] )
 	rtd.fit_method = NATURAL;
 	rtd.step = 1;
 	rtd.zoomstep = 1.1;
+	rtd.pixelheight = 1.0;
 	rtd.palettehack = 0;
 	rtd.bb = 0x04;
 	rtd.mouse.flags = 0x01;
@@ -1087,6 +1100,12 @@ int	main( int argc, char *argv[] )
 			opt += 7;
 			rtd.height = strtol( opt, &opt, 10 );
 			if (*opt)
+				err = -1;
+		}
+		else if (!strncmp( opt, "pixelheight=", 12 ))
+		{
+			opt += 12;
+			if (1 != sscanf(opt, "%lf%c", &rtd.pixelheight, &c))
 				err = -1;
 		}
 		else if (!strcmp( opt, "palettehack"))

@@ -52,7 +52,7 @@ void	Green_GetScrollRegion( Green_Document *doc, int w, int h, int *scroll_w, in
 	PopplerPage	*page;
 	
 	page = poppler_document_get_page( doc->doc, doc->page_cur );
-	Green_GetDimension( page, scroll_w, scroll_h, Green_Fit( doc, w, h ) * doc->finescale, doc->rotation % 2 );
+	Green_GetDimension( page, scroll_w, scroll_h, Green_Fit( doc, w, h ) * doc->finescale, doc->pixelheight, doc->rotation % 2 );
 	g_object_unref( G_OBJECT( page ) );
 	if (*scroll_w < w)
 		*scroll_w = 0;
@@ -102,11 +102,13 @@ int	Green_Open( Green_RTD *rtd, char *uri )
 	doc->rotation = 0;
 	doc->fit_method = rtd->fit_method;
 	doc->palettehack = rtd->palettehack;
+	doc->pixelheight = rtd->pixelheight;
 	doc->finescale = 1;
 	doc->search_str = NULL;
 	doc->bb = rtd->bb;
 	doc->cache.page = -1;
 	doc->cache.tscale = 0;
+	doc->cache.rotation = 0;
 	doc->cache.surface = NULL;
 	for (i = 0; i < rtd->doc_count; i++)
 	{
@@ -170,9 +172,10 @@ double	Green_Fit( Green_Document *doc, int w, int h )
 	if (doc->fit_method == WIDTH)
 		return w / pwidth;
 	else if (doc->fit_method == HEIGHT)
-		return h / pheight;
+		return h / pheight * doc->pixelheight;
 	else if (doc->fit_method == PAGE)
-		return (w / pwidth <= h / pheight) ? w / pwidth : h / pheight;
+		return (w / pwidth <= h / pheight * doc->pixelheight) ?
+			w / pwidth : h / pheight * doc->pixelheight;
 	
 	return 1;
 }
@@ -400,8 +403,8 @@ void	Green_Zoom( Green_Document *doc, int width, int height, double new_fs )
 	old_tscale = Green_Fit(doc, width, height) * doc->finescale;
 	doc->finescale = new_fs;
 	new_tscale = Green_Fit(doc, width, height) * new_fs;
-	Green_GetDimension( page, &old_w, &old_h, old_tscale, doc->rotation % 2 );
-	Green_GetDimension( page, &new_w, &new_h, new_tscale, doc->rotation % 2 );
+	Green_GetDimension( page, &old_w, &old_h, old_tscale, doc->pixelheight, doc->rotation % 2 );
+	Green_GetDimension( page, &new_w, &new_h, new_tscale, doc->pixelheight, doc->rotation % 2 );
 	g_object_unref( G_OBJECT( page ) );
 	
 	if (doc->rotation % 2 == 0)

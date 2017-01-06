@@ -165,15 +165,20 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 	if (doc->search_str)
 		list = poppler_page_find_text( page, doc->search_str );
 
-	if (doc->cache.surface && doc->cache.page == doc->page_cur && doc->cache.tscale == tscale)
+	if (doc->cache.surface && doc->cache.page == doc->page_cur && doc->cache.tscale == tscale && doc->cache.rotation == doc->rotation)
 		surface = doc->cache.surface;
 	else
 	{
-		Green_GetDimension( page, &w, &h, tscale, false );
-		surface = cairo_image_surface_create( CAIRO_FORMAT_ARGB32, w, h );
+		Green_GetDimension( page, &w, &h, tscale, doc->pixelheight, false );
+		if (doc->rotation % 2)
+			h *= doc->pixelheight + 1;
+		surface = cairo_image_surface_create( CAIRO_FORMAT_ARGB32, w, h);
 		context = cairo_create( surface );
 		cairo_save( context );
-		cairo_scale( context, tscale, tscale );
+		if (doc->rotation % 2)
+			cairo_scale( context, tscale / doc->pixelheight, tscale );
+		else
+			cairo_scale( context, tscale, tscale / doc->pixelheight );
 		poppler_page_render( page, context );
 		cairo_restore( context );
 		cairo_set_operator( context, CAIRO_OPERATOR_DEST_OVER );
@@ -271,10 +276,10 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 			rect->y1 *= tscale;
 			rect->x2 *= tscale;
 			rect->y2 *= tscale;
-			rect->x1 -= xoff;
-			rect->y1 -= yoff;
-			rect->x2 -= xoff;
-			rect->y2 -= yoff;
+			rect->x1 -= xoff * (doc->rotation%2?doc->pixelheight:1);
+			rect->y1 -= yoff * (doc->rotation%2?1:doc->pixelheight);
+			rect->x2 -= xoff * (doc->rotation%2?doc->pixelheight:1);
+			rect->y2 -= yoff * (doc->rotation%2?1:doc->pixelheight);
 			if (doc->rotation % 2)
 			{
 				tmp_d = rect->x1;
@@ -284,6 +289,8 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 				rect->x2 = rect->y2;
 				rect->y2 = tmp_d;
 			}
+			rect->y1 /= doc->pixelheight;
+			rect->y2 /= doc->pixelheight;
 
 			if (doc->mirrored)
 			{
@@ -405,7 +412,7 @@ void	Render( Green_RTD *rtd )
 	doc = rtd->docs[rtd->doc_cur];
 	tscale = Green_Fit( doc, display->w, display->h ) * doc->finescale;
 	page = poppler_document_get_page( doc->doc, doc->page_cur );
-	Green_GetDimension( page, &w, &h, tscale, doc->rotation % 2 );
+	Green_GetDimension( page, &w, &h, tscale, doc->pixelheight, doc->rotation % 2 );
 	rect.w = w > display->w ? display->w : w;
 	rect.h = h > display->h ? display->h : h;
 	rect.x = (display->w - rect.w) / 2;
