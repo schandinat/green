@@ -113,6 +113,25 @@ void	GetInput( IBuffer *input, SDL_Event *event )
 	return;
 }
 
+void	CopyPixel( Uint32 *dst, Uint8 red, Uint8 green, Uint8 blue, SDL_PixelFormat *fmt )
+{
+	Uint32 tdst;
+
+	tdst = SDL_MapRGB(fmt, red, green, blue);
+
+	switch(fmt->BitsPerPixel) {
+	case 8:
+		* (Uint8 *) dst = tdst & 0xFF;
+		break;
+	case 16:
+		* (Uint16 *) dst = tdst & 0xFFFF;
+		break;
+	case 32:
+		*dst = tdst;
+		break;
+	}
+}
+
 void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage *page, double tscale )
 {
 	PopplerRectangle	*rect;
@@ -128,6 +147,7 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 	guint	i, n;
 	GList	*list = NULL;
 	Uint32	*src, *dst;
+	int	red, green, blue;
 	int	x, y, rowstride, w, h, dir_x, dir_y;
 
 	if (doc->search_str)
@@ -189,10 +209,12 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 				+ dest.x * fmt.BytesPerPixel;
 			for (x = 0; x < dest.w; x++)
 			{
-				*dst = ((((*src>>16)&0xFF)>>fmt.Rloss)<<fmt.Rshift)
-					| ((((*src>>8)&0xFF)>>fmt.Gloss)<<fmt.Gshift)
-					| (((*src&0xFF)>>fmt.Bloss)<<fmt.Bshift);
-				
+				red = (*src>>16)&0xFF;
+				green = (*src>>8)&0xFF;
+				blue = *src&0xFF;
+
+				CopyPixel(dst, red, green, blue, &fmt);
+
 				src = (void*)src + dir_x * rowstride;
 				dst = (void*)dst + fmt.BytesPerPixel;
 			}
@@ -207,9 +229,11 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 				+ dest.x * fmt.BytesPerPixel;
 			for (x = 0; x < dest.w; x++)
 			{
-				*dst = ((((*src>>16)&0xFF)>>fmt.Rloss)<<fmt.Rshift)
-					| ((((*src>>8)&0xFF)>>fmt.Gloss)<<fmt.Gshift)
-					| (((*src&0xFF)>>fmt.Bloss)<<fmt.Bshift);
+				red = (*src>>16)&0xFF;
+				green = (*src>>8)&0xFF;
+				blue = *src&0xFF;
+
+				CopyPixel(dst, red, green, blue, &fmt);
 				
 				src += dir_x;
 				dst = (void*)dst + fmt.BytesPerPixel;
@@ -307,9 +331,11 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 						+ (dest.x + (int)rect->x1) * fmt.BytesPerPixel;
 					for (x = rect->x1; x < (int)rect->x2; x++)
 					{
-						*dst = ((((((*src>>16)&0xFF) * ia + ar) / 256)>>fmt.Rloss)<<fmt.Rshift)
-							| ((((((*src>>8)&0xFF) * ia + ag) / 256)>>fmt.Gloss)<<fmt.Gshift)
-							| (((((*src&0xFF) * ia + ab) / 256)>>fmt.Bloss)<<fmt.Bshift);
+						red = (((*src>>16)&0xFF) * ia + ar) / 256;
+						green = (((*src>>8)&0xFF) * ia + ag) / 256;
+						blue = (((*src)&0xFF) * ia + ab) / 256;
+
+						CopyPixel(dst, red, green, blue, &fmt);
 						
 						src = (void*)src + dir_x * rowstride;
 						dst = (void*)dst + fmt.BytesPerPixel;
@@ -325,10 +351,12 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 						+ (dest.x + (int)rect->x1) * fmt.BytesPerPixel;
 					for (x = rect->x1; x < (int)rect->x2; x++)
 					{
-						*dst = ((((((*src>>16)&0xFF) * ia + ar) / 256)>>fmt.Rloss)<<fmt.Rshift)
-							| ((((((*src>>8)&0xFF) * ia + ag) / 256)>>fmt.Gloss)<<fmt.Gshift)
-							| (((((*src&0xFF) * ia + ab) / 256)>>fmt.Bloss)<<fmt.Bshift);
-						
+						red = (((*src>>16)&0xFF) * ia + ar) / 256;
+						green = (((*src>>8)&0xFF) * ia + ag) / 256;
+						blue = (((*src)&0xFF) * ia + ab) / 256;
+
+						CopyPixel(dst, red, green, blue, &fmt);
+
 						src += dir_x;
 						dst = (void*)dst + fmt.BytesPerPixel;
 					}
@@ -589,13 +617,6 @@ int	Green_SDL_Main( Green_RTD *rtd )
 		SDL_Quit();
 		fprintf( stderr, "SDL_SetVideoMode failed: %s\n", SDL_GetError() );
 		return 2;
-	}
-	
-	if (display->format->palette)
-	{
-		SDL_Quit();
-		fprintf( stderr, "Palettes are not supported!\n" );
-                return 3;
 	}
 	
 	timer = SDL_AddTimer( live_interval, live_timer, NULL );
