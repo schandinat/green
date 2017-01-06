@@ -30,6 +30,7 @@
 #define SCHEME_HIGHLIGHTCOLOR		 7
 #define SCHEME_HIGHLIGHTALPHA		 8
 #define SCHEME_CURSORBORDER		 9
+#define SCHEME_MOUSEFLAGS		11
 
 #define RGB_TEXT "/usr/share/X11/rgb.txt"
 
@@ -65,6 +66,7 @@ struct SchemeProperty	scheme_property[] =
 	{"Fit", SCHEME_FIT, 0},
 	{"Cursor.Visibility", SCHEME_CURSORVISIBILITY, 0},
 	{"Cursor.Border", SCHEME_CURSORBORDER, 0},
+	{"Mouse", SCHEME_MOUSEFLAGS, 0},
 	{"Background.Color", SCHEME_BACKGROUNDCOLOR, 0},
 	{"Highlight.Color", SCHEME_HIGHLIGHTCOLOR, 0},
 	{"Highlight.Alpha", SCHEME_HIGHLIGHTALPHA, 0}
@@ -81,6 +83,7 @@ const char	*help_text =
 "    -no-fullscreen              to startup in window mode\n"
 "    -width=<width>              to specify the window width (in pixels)\n"
 "    -height=<height>            to specify the window height (in pixels)\n"
+"    -nomouse                    disable mouse\n"
 "    -help                       shows this help\n"
 "    -version                    displays version information\n"
 "\n"
@@ -395,6 +398,14 @@ int	EvalProperty( Green_RTD *rtd, int id, char *arg )
 			else
 				res = -1;
 			
+			break;
+		case SCHEME_MOUSEFLAGS:
+			tmpl = strtol( arg, &tmpc, 10 );
+			if (*tmpc || tmpl < 0)
+				res = -1;
+			else
+				rtd->mouse.flags = tmpl;
+
 			break;
 		case SCHEME_CURSORVISIBILITY:
 			tmpl = strtol( arg, &tmpc, 10 );
@@ -907,7 +918,7 @@ int	main( int argc, char *argv[] )
 	rtd.step = 1;
 	rtd.zoomstep = 1.1;
 	rtd.bb = 0x04;
-	rtd.mouse.flags = 1;
+	rtd.mouse.flags = 0x01;
 	rtd.mouse.visibility = 500;
 	rtd.mouse.border_size = 0;
 	rtd.mouse.border_speed = 1;
@@ -1064,6 +1075,8 @@ int	main( int argc, char *argv[] )
 			if (*opt)
 				err = -1;
 		}
+		else if (!strcmp( opt, "nomouse"))
+			rtd.mouse.flags = 0;
 		else if (!strcmp( opt, "fullscreen" ))
 			rtd.flags |= GREEN_FULLSCREEN;
 		else if (!strcmp( opt, "no-fullscreen" ))

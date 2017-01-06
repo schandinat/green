@@ -569,9 +569,16 @@ int	Green_SDL_Main( Green_RTD *rtd )
 	long	tmp;
 	int	x, y, width, height;
 	
+	if (!(rtd->mouse.flags & 0x01))
+		setenv("SDL_NOMOUSE", "1", 1);
+
 	if (SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER ))
 	{
 		fprintf( stderr, "SDL_Init failed: %s\n", SDL_GetError() );
+		if (!strcmp(SDL_GetError(), "Unable to open mouse")) {
+			printf("run with -nomouse or ");
+			printf("add Mouse=0 to conf file\n");
+		}
 		return 1;
 	}
 	
@@ -593,8 +600,8 @@ int	Green_SDL_Main( Green_RTD *rtd )
 	
 	timer = SDL_AddTimer( live_interval, live_timer, NULL );
 	mouse_last = SDL_GetTicks();
-	if (!rtd->mouse.visibility)
-		SDL_ShowCursor( SDL_DISABLE );
+	if (!rtd->mouse.visibility || !(rtd->mouse.flags & 0x01))
+ 		SDL_ShowCursor( SDL_DISABLE );
 	
 	do
 	{
