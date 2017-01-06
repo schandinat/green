@@ -101,6 +101,7 @@ int	Green_Open( Green_RTD *rtd, char *uri )
 	doc->mirrored = false;
 	doc->rotation = 0;
 	doc->fit_method = rtd->fit_method;
+	doc->palettehack = rtd->palettehack;
 	doc->finescale = 1;
 	doc->search_str = NULL;
 	doc->bb = rtd->bb;

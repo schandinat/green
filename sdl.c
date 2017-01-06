@@ -150,6 +150,18 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 	int	red, green, blue;
 	int	x, y, rowstride, w, h, dir_x, dir_y;
 
+	if (doc->palettehack && fmt.palette && fmt.BitsPerPixel == 8) {
+		/* palette hack; wrong in general, but fast;
+		   works with the palette as initialized by SDL */
+		fmt.Rloss = 5;
+		fmt.Gloss = 5;
+		fmt.Bloss = 6;
+		fmt.Rshift = 5;
+		fmt.Gshift = 2;
+		fmt.Bshift = 0;
+		fmt.palette = NULL;
+	}
+
 	if (doc->search_str)
 		list = poppler_page_find_text( page, doc->search_str );
 

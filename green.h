@@ -59,6 +59,7 @@ typedef struct
 		// 3: rotated right by 270°
 	Green_FitMethod	fit_method;
 	double	finescale;
+	int	palettehack;
 	char	*search_str;
 	unsigned char	bb;
 	Green_PageBuffer	cache;
@@ -73,6 +74,7 @@ typedef struct
 	Green_RGBA	c_background, c_highlight;
 	Green_FitMethod	fit_method;
 	double	step, zoomstep;
+	int	palettehack;
 	unsigned char	bb;
 	
 	struct
