@@ -924,7 +924,9 @@ int	main( int argc, char *argv[] )
 	rtd.mouse.border_speed = 1;
 	schemes.scheme = NULL;
 	schemes.n = 0;
-	g_type_init();
+#if !GLIB_CHECK_VERSION(2,35,0)
+ 	g_type_init();
+#endif
 	
 	for (i = 1; i < argc; i++)
 	{
