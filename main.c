@@ -33,6 +33,7 @@
 #define SCHEME_PIXELHEIGHT		10
 #define SCHEME_MOUSEFLAGS		11
 #define SCHEME_PALETTEHACK		12
+#define SCHEME_ALTVT			13
 
 #define RGB_TEXT "/usr/share/X11/rgb.txt"
 
@@ -70,6 +71,7 @@ struct SchemeProperty	scheme_property[] =
 	{"Cursor.Visibility", SCHEME_CURSORVISIBILITY, 0},
 	{"Cursor.Border", SCHEME_CURSORBORDER, 0},
 	{"Palettehack", SCHEME_PALETTEHACK, 0},
+	{"Altvt", SCHEME_ALTVT, 0},
 	{"Mouse", SCHEME_MOUSEFLAGS, 0},
 	{"Background.Color", SCHEME_BACKGROUNDCOLOR, 0},
 	{"Highlight.Color", SCHEME_HIGHLIGHTCOLOR, 0},
@@ -89,6 +91,7 @@ const char	*help_text =
 "    -height=<height>            to specify the window height (in pixels)\n"
 "    -pixeleheight=<prop>        height of pixel in proprtion to its width\n"
 "    -palettehack                hack for speed on palette displays\n"
+"    -altvt                      allow switching vt by alt- and alt+\n"
 "    -nomouse                    disable mouse\n"
 "    -help                       shows this help\n"
 "    -version                    displays version information\n"
@@ -427,6 +430,15 @@ int	EvalProperty( Green_RTD *rtd, int id, char *arg )
 				res = -1;
 			else
 				rtd->mouse.flags = tmpl;
+
+			break;
+		case SCHEME_ALTVT:
+			if (!strcasecmp( arg, "yes" ))
+				rtd->flags |= GREEN_ALTVT;
+			else if (!strcasecmp( arg, "no" ))
+				rtd->flags &= ~GREEN_ALTVT;
+			else
+				res = -1;
 
 			break;
 		case SCHEME_CURSORVISIBILITY:
@@ -1112,6 +1124,8 @@ int	main( int argc, char *argv[] )
 			rtd.palettehack = 1;
 		else if (!strcmp( opt, "nomouse"))
 			rtd.mouse.flags = 0;
+		else if (!strcmp( opt, "altvt"))
+			rtd.flags |= GREEN_ALTVT;
 		else if (!strcmp( opt, "fullscreen" ))
 			rtd.flags |= GREEN_FULLSCREEN;
 		else if (!strcmp( opt, "no-fullscreen" ))

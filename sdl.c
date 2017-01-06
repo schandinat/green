@@ -15,6 +15,13 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/vt.h>
+#include <linux/tty.h>
+#include <linux/kd.h>
 #include <SDL.h>
 #include "green.h"
 
@@ -423,6 +430,82 @@ void	Render( Green_RTD *rtd )
 	return;
 }
 
+/*
+ * switch from active console to next/previous (if increase=1/-1)
+ * wait for coming back, so that we can re-render
+ */
+
+int inc_console(int increase) {
+	int tty;
+	int res;
+	struct vt_stat st;
+	int current;
+	int i, step;
+
+	// printf("inc_console(%d)\n", increase);
+
+	tty = open("/dev/tty", O_RDONLY);
+	if (tty == -1) {
+		perror("/dev/tty");
+		return -1;
+	}
+
+			/* find map and the currently active vt */
+
+	res = ioctl(tty, VT_GETSTATE, &st);
+	if (res) {
+		perror("ioctl");
+		return -1;
+	}
+
+			/* find next used vt */
+
+	current = st.v_active;
+	step = increase > 0 ? 1 : -1;
+	for(i = current + increase; i != current; i += step) {
+
+			/* rotation of consoles */
+
+		if (i > MAX_NR_CONSOLES)
+			i = 1;
+		if (i < 1)
+			i = MAX_NR_CONSOLES;
+
+			/* map only covers the first 15 consoles */
+
+		if (i < 8 * sizeof(st.v_state)) {
+			if ((st.v_state >> i) & 0x01) {
+				// printf("switching to %d\n", i);
+				ioctl(tty, KDSETMODE, 0);
+				res = ioctl(tty, VT_ACTIVATE, i);
+				if (res == 0)
+					ioctl(tty, VT_WAITACTIVE, i);
+				ioctl(tty, VT_WAITACTIVE, current);
+				ioctl(tty, KDSETMODE, 1);
+				break;
+			}
+		}
+
+			/* trick to check if the other consoles are used */
+
+		else {
+			if (ioctl(tty, VT_DISALLOCATE, i)) {
+				// printf("switching to %d\n", i);
+				ioctl(tty, KDSETMODE, 0);
+				res = ioctl(tty, VT_ACTIVATE, i);
+				if (res == 0)
+					ioctl(tty, VT_WAITACTIVE, i);
+				ioctl(tty, VT_WAITACTIVE, current);
+				ioctl(tty, KDSETMODE, 1);
+				break;
+			}
+		}
+	}
+
+	close(tty);
+	return 0;
+}
+
 RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 {
 	Green_Document	*doc = NULL;
@@ -487,6 +570,13 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_LEFT:
+			if ((rtd->flags & GREEN_ALTVT) &&
+			    (event->key.keysym.mod == KMOD_LALT ||
+			     event->key.keysym.mod == KMOD_RALT)) {
+				inc_console(-1);
+				*flags |= FLAG_RENDER;
+				break;
+			}
 			if (!doc)
 				break;
 			
@@ -507,7 +597,14 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			Green_ScrollRelative( doc, display->w * rtd->step, 0, display->w, display->h, 1 );
 			*flags |= FLAG_RENDER;
 			break;
-		case SDLK_RIGHT:
+ 		case SDLK_RIGHT:
+			if ((rtd->flags & GREEN_ALTVT) &&
+			    (event->key.keysym.mod == KMOD_LALT ||
+			     event->key.keysym.mod == KMOD_RALT)) {
+				inc_console(1);
+				*flags |= FLAG_RENDER;
+				break;
+			}
 			if (!doc)
 				break;
 			

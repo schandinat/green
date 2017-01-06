@@ -23,6 +23,7 @@
 
 
 #define GREEN_FULLSCREEN	0x0001
+#define GREEN_ALTVT		0x0010
 
 
 typedef enum
