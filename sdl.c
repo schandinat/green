@@ -637,6 +637,7 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			state = ROTATE;
 			break;
 		case '+':
+		case '=':
 			if (!doc)
 				break;
 			
