@@ -1,12 +1,9 @@
-.TH UNTITLED 9 "" "Vendor Name" "User Commands"
-.ad l
-.nh
-.SH "GREEN 1 'JULY 2012' 'DEBIAN GNU / LINUX' 'USER MANUALS'"
-.SS NAME
+.TH GREEN 1 "JULY 2012"
+.SH NAME
 green - a lightweight PDF reader for the Framebuffer using libpoppler
-.SS SYNOPSIS
-\fBgreen\fR [\fBoptions\fR] <\fBPDF file 1\fR> \fI[PDF file 2]\fR ...
-.SS DESCRIPTION
+.SH SYNOPSIS
+\fBgreen\fR [\fIoptions\fR] <\fIPDF file 1\fR> \fI[PDF file 2]\fR ...
+.SH DESCRIPTION
 \fBgreen\fR is meant to be a light PDF reader for the Linux Framebuffer. 
 However, it can also be used inside a graphical X11 Session like GNOME or
 MATE.
@@ -14,56 +11,134 @@ MATE.
 \fBgreen\fR features:
 .IP " \[bu] " 3
 uses libpoppler for PDF reading
-.IP " \[bu] " 3
+.IP " \[bu] "
 uses SDL to support various frontends (including framebuffer)
-.IP " \[bu] " 3
+.IP " \[bu] "
 multiple documents
-.IP " \[bu] " 3
+.IP " \[bu] "
 single page mode
-.IP " \[bu] " 3
+.IP " \[bu] "
 fit width, height or page
-.IP " \[bu] " 3
+.IP " \[bu] "
 zooming
-.IP " \[bu] " 3
+.IP " \[bu] "
 goto page
-.IP " \[bu] " 3
+.IP " \[bu] "
 search function
-.IP " \[bu] " 3
+.IP " \[bu] "
 scheme support
-.SS OPTIONS
-\fB-b\fR
-Do not write "busy" to stdout while processing.
-.PP
-\fB-c\fR \fIconfig-file\fR
-Use the alternate system wide \fIconfig-file\fR instead of \fI/etc/foo.conf\fR. This
-overrides any \fBFOOCONF\fR environment variable.
-.PP
-\fB-a\fR
-In addition to the baz segments, also parse the blurfl headers.
-.PP
-\fB-r\fR
-Recursive mode. Operates as fast as lightning at the expense of a megabyte
-of virtual memory.
-.SS "PROGRAM OPERATION"
+.SH OPTIONS
+.TP
+\fB-config\fP=\fIfile\fP
+use an alternate configuration file instead of \fI/etc/green.conf\fP
+.TP
+\fB-fit\fP=(\fInone|width|height|page\fP)
+fit image to display
+.TP
+\fB-width\fP=\fInum\fP
+start with a window large \fInum\fP pixels
+.TP
+\fB-height\fP=\fInum\fp
+start with a window \fInum\fP pixels tall
+.TP
+\fB-pixelheight=\fInum\fP
+set the height of a pixel as a proportion to its width
+.TP
+\fB-palettehack\fP
+use an hack that speeds up drawing on an 8-bit palette display but may be
+incorrect
+.TP
+\fB-altvt\fP
+switch to previous/next virtual terminal by alt- and alt+
+.TP
+\fB-nomouse\fP
+disable mouse; equivalent to setting "Mouse=0" in the current scheme or
+SDL_NOMOUSE=1 in the environment
+.TP
+\fB-fullscreen\fP
+.PD 0
+.TP
+\fB-nofullscreen\fP
+.PD
+start in fullscreen mode or not
+.TP
+\fB-scheme\fP=\fI<id list>\fp
+select a different scheme.
+.SH PROGRAM OPERATION
 \fB<TAB>\fR - Go to the next open document.
+.br
 \fB<F<n>>\fR - Go to the n-th document.
+.br
 \fBESC\fR - Escape current input mode.  
+.br
 \fBq\fR - Quit
-.SS "NAVIGATION INSIDE A DOCUMENT"
-\fB<h, left arrow>\fR - Scroll left.
-\fB<l, right arrow>\fR - Scroll right.
-\fB<j, down arrow>\fR - Scroll down.
-\fB<k, up arrow>\fR - Scroll up.
-\fB<pg up>\fR - Go to previous page.
-\fB<pg dn>\fR - Go to next page.
-\fB<g<n>RETURN>\fR - Go to page n.
-\fB<+,->\fR - Zoom in, Zoom out.
-.SS FILES
+.SS Navigation inside a document
+\fBh, left arrow\fR - Scroll left.
+.br
+\fBl, right arrow\fR - Scroll right.
+.br
+\fBj, down arrow\fR - Scroll down.
+.br
+\fBk, up arrow\fR - Scroll up.
+.br
+\fBpg up\fR - Go to previous page.
+.br
+\fBpg dn\fR - Go to next page.
+.br
+\fBg<n>RETURN\fR - Go to page n.
+.br
+\fB+,-\fR - Zoom in, Zoom out.
+.SS Fitting
+\fBfn\fP - disable page fitting mode.
+.br
+\fBfw\fP - fit page width.
+.br
+\fBfh\fP - fit page height.
+.br
+\fBfp\fP - fit whole page.
+.SS Searching 
+\fBs<X><RETURN>\fP - Start search for string X.
+.br
+\fBn\fP - Show next result.
+.SH FILES
 \fI$(HOME)/.green.conf\fR 
 Per user configuration file.
-\fI/usr/local/etc/green.conf\fR
+.br
+\fI/etc/green.conf\fR
 The system wide configuration file.
-.SS AUTHOR
-The Green source code may be downloaded from http://github.com/schandinat/green/.                      
+.SH EXAMPLE CONFIGURATION FILE
+.nf
+# green configuration file
+#
+# add to .bashrc:
+# [ "$TERM" == linux ] && alias green='green -scheme=fb'
+
+# scheme for a 600x400 framebuffer
+SCHEME fb
+{
+	Fit=width
+	Pixelheight=1.2
+	Altvt=yes
+	Mouse=0
+	Palettehack=1
+}
+
+# scheme for X11
+SCHEME x11
+{
+	Width=800
+	Height=600
+}
+
+# default scheme
+DEFAULT_SCHEME x11
+.fi
+.SH AUTHOR
+The Green source code may be downloaded from
+http://github.com/schandinat/green/.                      
+
 Green is Licensed under GNU GPL version 3.  
-This man page was written for the Debian GNU / Linux System by Oz Nahum nahumoz@gmail.com.
+
+This man page was written for the Debian GNU / Linux System by Oz Nahum
+nahumoz@gmail.com.
+
