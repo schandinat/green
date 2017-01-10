@@ -516,22 +516,17 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 	
 	if (Green_IsDocValid( rtd, rtd->doc_cur ))
 		doc = rtd->docs[rtd->doc_cur];
-	
-	switch (event->key.keysym.sym)
-	{
-		case 'q':
-			*flags |= FLAG_QUIT;
-			break;
+
+	switch (event->key.keysym.unicode) {
 		case 'c':
 			Green_Close( rtd, rtd->doc_cur );
 			*flags |= FLAG_RENDER;
 			break;
+		case 'q':
+			*flags |= FLAG_QUIT;
+			break;
 		case 'g':
 			state = GOTO;
-			break;
-		case SDLK_s:
-			/* type s-SEARCHSTRING-<Enter> to search string */
-			state = SEARCH;
 			break;
 		case 'n':
 			if (!doc || !doc->search_str)
@@ -542,6 +537,31 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			break;
 		case 'f':
 			state = FIT;
+			break;
+		case '+':
+			if (!doc)
+				break;
+			
+			Green_Zoom( doc, display->w,display->h, doc->finescale * rtd->zoomstep );
+			*flags |= FLAG_RENDER;
+			break;
+		case '-':
+			if (!doc)
+				break;
+			
+			Green_Zoom( doc, display->w,display->h, doc->finescale / rtd->zoomstep );
+			*flags |= FLAG_RENDER;
+			break;
+	}
+
+	if (event->key.keysym.unicode != 0)
+		return state;
+	
+	switch (event->key.keysym.sym)
+	{
+		case SDLK_s:
+			/* type s-SEARCHSTRING-<Enter> to search string */
+			state = SEARCH;
 			break;
 		case SDLK_UP:
 			if (!doc)
@@ -636,21 +656,6 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			
 			state = ROTATE;
 			break;
-		case '+':
-		case '=':
-			if (!doc)
-				break;
-			
-			Green_Zoom( doc, display->w,display->h, doc->finescale * rtd->zoomstep );
-			*flags |= FLAG_RENDER;
-			break;
-		case '-':
-			if (!doc)
-				break;
-			
-			Green_Zoom( doc, display->w,display->h, doc->finescale / rtd->zoomstep );
-			*flags |= FLAG_RENDER;
-			break;
 		case SDLK_F12:
 			f++;
 		case SDLK_F11:
@@ -727,7 +732,9 @@ int	Green_SDL_Main( Green_RTD *rtd )
 		}
 		return 1;
 	}
-	
+
+	SDL_EnableUNICODE(1);
+
 	SDL_WM_SetCaption( "green - the PDF reader", NULL );
 	display = SDL_SetVideoMode( rtd->width, rtd->height, 0, SDL_SWSURFACE | SDL_ANYFORMAT | SDL_RESIZABLE | (rtd->flags&GREEN_FULLSCREEN ? SDL_FULLSCREEN : 0) );
 	if (!display)
