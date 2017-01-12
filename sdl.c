@@ -513,6 +513,8 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 	SDL_Surface	*display = SDL_GetVideoSurface();
 	RState	state = NORMAL;
 	int	f = 0;
+	PopplerPage	*page;
+	int	w, h, scrollx, scrolly;
 	
 	if (Green_IsDocValid( rtd, rtd->doc_cur ))
 		doc = rtd->docs[rtd->doc_cur];
@@ -552,17 +554,34 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			Green_Zoom( doc, display->w,display->h, doc->finescale / rtd->zoomstep );
 			*flags |= FLAG_RENDER;
 			break;
-	}
-
-	if (event->key.keysym.unicode != 0)
-		return state;
-	
-	switch (event->key.keysym.sym)
-	{
-		case SDLK_s:
+		case 's':
+		case '/':
 			/* type s-SEARCHSTRING-<Enter> to search string */
 			state = SEARCH;
 			break;
+		case '.':
+			if (!doc)
+				break;
+
+			doc->xoffset = 0;
+			doc->yoffset = 0;
+
+			page = poppler_document_get_page( doc->doc, doc->page_cur );
+			Green_GetDimension ( page, &w, &h, doc->cache.tscale, doc->pixelheight, doc->rotation % 2 );
+			g_object_unref( G_OBJECT( page ) );
+
+			scrollx = (w - display->w) / 2;
+			scrollx *= (doc->rotation % 3) ? -1 : 1;
+			scrolly= (h - display->h) / 2;
+			scrolly *= (doc->rotation > 1) ? -1 : 1;
+
+			Green_ScrollRelative( doc, scrollx, scrolly, display->w, display->h, 0 );
+			*flags |= FLAG_RENDER;
+			break;
+	}
+
+	switch (event->key.keysym.sym)
+	{
 		case SDLK_UP:
 			if (!doc)
 				break;
