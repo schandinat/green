@@ -35,6 +35,7 @@
 #define SCHEME_MOUSEFLAGS		11
 #define SCHEME_PALETTEHACK		12
 #define SCHEME_ALTVT			13
+#define SCHEME_STEP			14
 
 #define RGB_TEXT "/usr/share/X11/rgb.txt"
 
@@ -68,6 +69,7 @@ struct SchemeProperty	scheme_property[] =
 	{"Height", SCHEME_HEIGHT, 0},
 	{"Fullscreen", SCHEME_FULLSCREEN, 0},
 	{"Fit", SCHEME_FIT, 0},
+	{"Step", SCHEME_STEP, 0},
 	{"Pixelheight", SCHEME_PIXELHEIGHT, 0},
 	{"Cursor.Visibility", SCHEME_CURSORVISIBILITY, 0},
 	{"Cursor.Border", SCHEME_CURSORBORDER, 0},
@@ -409,6 +411,13 @@ int	EvalProperty( Green_RTD *rtd, int id, char *arg )
 				res = -1;
 			
 			break;
+		case SCHEME_STEP:
+			tmpd = ReadFraction( arg );
+			if (tmpd <= 0 || tmpd > 1)
+				res = -1;
+			else
+				rtd->step = tmpd;
+			break;
 		case SCHEME_PIXELHEIGHT:
 			tmpd = strtod( arg, &tmpc );
 			if (*tmpc || tmpd < 0)
@@ -418,11 +427,11 @@ int	EvalProperty( Green_RTD *rtd, int id, char *arg )
 
 			break;
 		case SCHEME_PALETTEHACK:
-			tmpd = strtol( arg, &tmpc, 10 );
-			if (*tmpc || tmpd < 0 || tmpd > 1)
+			tmpl = strtol( arg, &tmpc, 10 );
+			if (*tmpc || tmpl < 0 || tmpl > 1)
 				res = -1;
 			else
-				rtd->palettehack = tmpd;
+				rtd->palettehack = tmpl;
 
 			break;
 		case SCHEME_MOUSEFLAGS:
