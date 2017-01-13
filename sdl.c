@@ -578,6 +578,25 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			Green_ScrollRelative( doc, scrollx, scrolly, display->w, display->h, 0 );
 			*flags |= FLAG_RENDER;
 			break;
+		case 'H':
+		case '?':
+			if ( rtd->doc_help < 0 )
+				break;
+
+			if (rtd->doc_last == -1) {
+				rtd->doc_last = rtd->doc_cur;
+				rtd->doc_cur = rtd->doc_help;
+			}
+			else {
+				f = rtd->doc_last;
+				if (!Green_IsDocValid( rtd, f ))
+					break;
+				rtd->doc_cur = f;
+				rtd->doc_last = -1;
+			}
+
+			*flags |= FLAG_RENDER;
+			break;
 	}
 
 	switch (event->key.keysym.sym)
@@ -698,13 +717,19 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 		case SDLK_F2:
 			f++;
 		case SDLK_F1:
+			if (rtd->doc_last >= 0)
+				break;
 			if (!Green_IsDocValid( rtd, f ))
 				break;
-			
+			if ( f == rtd->doc_help )
+				break;
+
 			rtd->doc_cur = f;
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_TAB:
+			if (rtd->doc_last >= 0)
+				break;
 			Green_NextVaildDoc( rtd );
 			*flags |= FLAG_RENDER;
 			break;

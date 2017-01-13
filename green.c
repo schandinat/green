@@ -75,7 +75,9 @@ int	Green_Open( Green_RTD *rtd, char *uri )
 	if (!doc)
 		return -1;
 	
-	if (!strncmp( uri, "file:", 5 ))
+	if (!strncmp( uri, "help:", 5))
+		doc->uri = "help:";
+	else if (!strncmp( uri, "file:", 5 ))
 		doc->uri = strdup( uri );
 	else
 		doc->uri = FilenameToURI( uri );
@@ -86,7 +88,11 @@ int	Green_Open( Green_RTD *rtd, char *uri )
 		return -1;
 	}
 	
-	doc->doc = poppler_document_new_from_file( doc->uri, NULL, NULL );
+	if (!strncmp( uri, "help:", 5))
+		doc->doc = poppler_document_new_from_data( uri + 5, strlen(uri + 5), NULL, NULL);
+	else
+		doc->doc = poppler_document_new_from_file( doc->uri, NULL, NULL );
+
 	if (!doc->doc)
 	{
 		free( doc->uri );

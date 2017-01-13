@@ -73,7 +73,7 @@ typedef struct
 {
 	unsigned short	flags, width, height;
 	Green_Document	**docs;
-	int	doc_count, doc_cur;
+	int	doc_count, doc_cur, doc_help, doc_last;
 	Green_RGBA	c_background, c_highlight;
 	Green_FitMethod	fit_method;
 	double	step, zoomstep;
@@ -157,11 +157,12 @@ inline static
 void	Green_NextVaildDoc( Green_RTD *rtd )
 {
 	int i;
+	int num = rtd->doc_help == -1 ? rtd->doc_count : rtd->doc_count - 1;
 	
-	for (i = 1; i < rtd->doc_count; i++)
-		if (rtd->docs[(rtd->doc_cur+i)%rtd->doc_count])
+	for (i = 1; i < num; i++)
+		if (rtd->docs[(rtd->doc_cur+i)%num])
 		{
-			rtd->doc_cur = (rtd->doc_cur + i) % rtd->doc_count;
+			rtd->doc_cur = (rtd->doc_cur + i) % num;
 			break;
 		}
 	

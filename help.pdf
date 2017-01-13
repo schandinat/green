@@ -1,0 +1,105 @@
+%PDF-1.1
+% … À
+
+% catalog
+1 0 obj
+<<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+
+% page dictionary
+2 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [
+    3 0 R
+  ]
+>>
+endobj
+
+% page 1
+3 0 obj
+<<
+  /Type /Page
+  /Contents 4 0 R
+  /MediaBox [ 0 0 600 400 ]
+  /Parent 2 0 R
+  /Resources <<
+    /Font << /HelpFont << /BaseFont /Courier /Subtype /Type1 >> >>
+  >>
+  /Rotate 0
+>>
+endobj
+
+% content of page 1
+4 0 obj
+<<
+  /Length 5 0 R
+>>
+stream
+BT
+10 400 Td
+12 TL
+/HelpFont 15 Tf
+(Green - A PDF viewer)'
+/HelpFont 14 Tf
+()'
+(  General)'
+/HelpFont 12 Tf
+()'
+(    TAB             Go to the next open document)'
+(    Fn              Go to the n-th document)'
+(    ESC             Escape current input mode)'
+(    H               Show this help)'
+(    q               Quit)'
+/HelpFont 14 Tf
+()'
+(  Navigation inside a document)'
+/HelpFont 12 Tf
+()'
+(    h, left arrow   Scroll left)'
+(    l, right arrow  Scroll right)'
+(    j, down arrow   Scroll down)'
+(    k, up arrow     Scroll up)'
+(    .               Center page)'
+(    rr, rl          Rotate right, rotate left)'
+(    pg up           Go to previous page)'
+(    pg dn           Go to next page)'
+(    g<n>RETURN      Go to page n)'
+(    +,-             Zoom in, Zoom out)'
+/HelpFont 14 Tf
+()'
+(  Searching)'
+/HelpFont 12 Tf
+()'
+(    s<X><RETURN>    Start search for string X)'
+(    n               Show next result)'
+ET
+endstream
+endobj
+
+% length of stream
+5 0 obj
+    500
+endobj
+
+xref
+0 8
+0000000000 65535 f 
+0000000052 00000 n 
+0000000133 00000 n 
+0000000242 00000 n 
+0000000501 00000 n 
+0000000673 00000 n 
+0000000721 00000 n 
+0000000783 00000 n 
+trailer <<
+  /Root 1 0 R
+  /Size 5
+>>
+startxref
+858
+%%EOF

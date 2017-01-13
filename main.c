@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "green.h"
+#include "help.h"
 
 
 #define SCHEME_WIDTH			 1
@@ -941,6 +942,8 @@ int	main( int argc, char *argv[] )
 	rtd.docs = NULL;
 	rtd.doc_count = 0;
 	rtd.doc_cur = 0;
+	rtd.doc_help = 0;
+	rtd.doc_last = -1;
 	rtd.c_background.r = 0x30;
 	rtd.c_background.g = 0xD0;
 	rtd.c_background.b = 0x30;
@@ -1152,6 +1155,11 @@ int	main( int argc, char *argv[] )
 			continue;
 		}
 	}
+
+	if (Green_Open( &rtd, helpdoc ) < 0)
+		rtd.doc_help = -1;
+	else
+		rtd.doc_help = rtd.doc_count - 1;
 	
 	return Green_SDL_Main( &rtd );
 }

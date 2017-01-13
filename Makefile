@@ -21,7 +21,15 @@ SDL_LIBS	:=	$$(sdl-config --libs)
 all: green
 
 clean:
-	$(RM) green main.o green.o sdl.o
+	$(RM) green main.o green.o sdl.o help.h
+
+main.o: help.h
+help.h: help.pdf
+	sed	-e '1 i \char helpdoc[] = "help:" '	\
+		-e 's,.*,"&\\n",'			\
+		-e 's,%,%%,g'				\
+		-e '$$ a \\;'				\
+		$^ > $@	
 
 install: green
 	$(INSTALL) green $(DESTDIR)/$(BINDIR)/
