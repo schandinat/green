@@ -12,10 +12,10 @@ MANDIR		:=      /usr/share/man
 
 CONFIG	:=	-D GREEN_SYSCONFIG_FILE=\"$(SYSCONFDIR)/green.conf\" -D GREEN_USERCONFIG_FILE=\".green.conf\"
 
-POPPLER_CFLAGS	:=	$$(pkg-config poppler-glib --cflags)
-POPPLER_LIBS	:=	$$(pkg-config poppler-glib --libs)
-SDL_CFLAGS	:=	$$(sdl-config --cflags)
-SDL_LIBS	:=	$$(sdl-config --libs)
+POPPLER_CFLAGS	:=	$(shell pkg-config poppler-glib --cflags)
+POPPLER_LIBS	:=	$(shell pkg-config poppler-glib --libs)
+SDL_CFLAGS	:=	$(shell sdl-config --cflags)
+SDL_LIBS	:=	$(shell sdl-config --libs)
 
 
 all: green
