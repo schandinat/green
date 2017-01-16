@@ -772,7 +772,8 @@ int	Green_SDL_Main( Green_RTD *rtd )
 	if (!(rtd->mouse.flags & 0x01))
 		setenv("SDL_NOMOUSE", "1", 1);
 
-	if (SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER ))
+	if (SDL_Init( SDL_INIT_VIDEO |
+	    (!(rtd->mouse.flags & 0x01) ? 0 : SDL_INIT_TIMER )))
 	{
 		fprintf( stderr, "SDL_Init failed: %s\n", SDL_GetError() );
 		if (!strcmp(SDL_GetError(), "Unable to open mouse")) {
