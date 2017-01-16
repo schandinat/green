@@ -53,7 +53,7 @@ BT
 (    TAB             Go to the next open document)'
 (    Fn              Go to the n-th document)'
 (    ESC             Escape current input mode)'
-(    H               Show this help)'
+(    H,?             Show this help)'
 (    q               Quit)'
 /HelpFont 14 Tf
 ()'
@@ -77,6 +77,11 @@ BT
 ()'
 (    s<X><RETURN>    Start search for string X)'
 (    n               Show next result)'
+()'
+(green [options] file1.pdf file2.pdf ...)'
+(see \"man green\" for possible options)'
+()'
+(H or ? to exit from this help)'
 ET
 endstream
 endobj

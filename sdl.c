@@ -583,6 +583,11 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			if ( rtd->doc_help < 0 )
 				break;
 
+			if (rtd->doc_help == 0) {
+				*flags |= FLAG_QUIT;
+				break;
+			}
+
 			if (rtd->doc_last == -1) {
 				rtd->doc_last = rtd->doc_cur;
 				rtd->doc_cur = rtd->doc_help;
