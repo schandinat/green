@@ -158,8 +158,23 @@ void	Green_NextVaildDoc( Green_RTD *rtd )
 			rtd->doc_cur = (rtd->doc_cur + i) % rtd->doc_count;
 			break;
 		}
-	
+
+	rtd->docs[rtd->doc_cur]->page_cur = 0;
 	return;
+}
+
+inline static
+void	Green_PrevValidDoc( Green_RTD *rtd )
+{
+	int i = rtd->doc_cur;
+
+	do {
+		i--;
+		if (i < 0) i = rtd->doc_count - 1;
+	} while(!rtd->docs[i]);
+
+	rtd->doc_cur = i;
+	rtd->docs[i]->page_cur = rtd->docs[i]->page_count - 1;
 }
 
 inline static
