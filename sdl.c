@@ -468,13 +468,17 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_PAGEUP:
-			if (!doc || !Green_GotoPage( doc, doc->page_cur - 1, true ))
+			if (doc->page_cur <= 0)
+				Green_PrevValidDoc( rtd );
+			else if (!doc || !Green_GotoPage( doc, doc->page_cur - 1, true ))
 				break;
 			
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_PAGEDOWN:
-			if (!doc || !Green_GotoPage( doc, doc->page_cur + 1, true ))
+			if (doc->page_cur+1 >= doc->page_count)
+				Green_NextVaildDoc( rtd );
+			else if (!doc || !Green_GotoPage( doc, doc->page_cur + 1, true ))
 				break;
 			
 			*flags |= FLAG_RENDER;
