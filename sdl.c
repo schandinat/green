@@ -413,12 +413,6 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			state = FIT;
 			break;
 		case SDLK_UP:
-			if (!doc)
-				break;
-			
-			Green_ScrollRelative( doc, 0, - display->h * rtd->step, display->w, display->h, 1 );
-			*flags |= FLAG_RENDER;
-			break;
 		case SDLK_k:
 			if (!doc)
 				break;
@@ -426,13 +420,7 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_DOWN:
-			if (!doc)
-				break;
-			
-			Green_ScrollRelative( doc, 0, display->h * rtd->step, display->w, display->h, 1 );
-			*flags |= FLAG_RENDER;
-			break;
-                case SDLK_j:
+        case SDLK_j:
 			if (!doc)
 				break;
 			
@@ -440,12 +428,6 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_LEFT:
-			if (!doc)
-				break;
-			
-			Green_ScrollRelative( doc, - display->w * rtd->step, 0, display->w, display->h, 1 );
-			*flags |= FLAG_RENDER;
-			break;
 		case SDLK_h:
 			if (!doc)
 				break;
@@ -454,12 +436,6 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_l:
-			if (!doc)
-				break;
-			
-			Green_ScrollRelative( doc, display->w * rtd->step, 0, display->w, display->h, 1 );
-			*flags |= FLAG_RENDER;
-			break;
 		case SDLK_RIGHT:
 			if (!doc)
 				break;
@@ -491,6 +467,7 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			
 			state = ROTATE;
 			break;
+		case '=':
 		case '+':
 			if (!doc)
 				break;
@@ -568,10 +545,17 @@ int	Green_SDL_Main( Green_RTD *rtd )
 	char	*str;
 	long	tmp;
 	int	x, y, width, height;
+
+	if (!(rtd->mouse.flags & 0x01))
+		setenv("SDL_NOMOUSE", "1", 1);
 	
 	if (SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER ))
 	{
 		fprintf( stderr, "SDL_Init failed: %s\n", SDL_GetError() );
+		if (!strcmp(SDL_GetError(), "Unable to open mouse")) {
+			printf("run with -nomouse or ");
+			printf("add Mouse=0 to conf file\n");
+		}
 		return 1;
 	}
 	
@@ -593,8 +577,10 @@ int	Green_SDL_Main( Green_RTD *rtd )
 	
 	timer = SDL_AddTimer( live_interval, live_timer, NULL );
 	mouse_last = SDL_GetTicks();
-	if (!rtd->mouse.visibility)
+	if (!rtd->mouse.visibility || !(rtd->mouse.flags & 0x01))
 		SDL_ShowCursor( SDL_DISABLE );
+
+	SDL_EnableKeyRepeat( SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL );
 	
 	do
 	{
