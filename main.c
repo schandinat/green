@@ -258,6 +258,12 @@ int	GetColor( Green_RGBA *color, char *str )
 		color->g = 0x00;
 		color->b = 0x00;
 	}
+	else if (!strcasecmp( str, "darkgray" ))
+	{
+		color->r = 0x40;
+		color->g = 0x40;
+		color->b = 0x40;
+	}
 	else if (!strcasecmp( str, "gray" ))
 	{
 		color->r = 0x80;
