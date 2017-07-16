@@ -1,7 +1,7 @@
 GREEN - A light weight PDF reader
 =======================================
 
-green - a lightweight PDF reader for the Framebuffer using libpoppler
+Green - a lightweight PDF reader for the Framebuffer using libpoppler
 
 This is a slightly modified version.  
 original version: [schandinat/green](https://github.com/schandinat/green)
