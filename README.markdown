@@ -3,9 +3,6 @@ GREEN - A light weight PDF reader
 
 Green - a lightweight PDF reader for the Framebuffer using libpoppler
 
-This is a slightly modified version.  
-original version: [schandinat/green](https://github.com/schandinat/green)
-
 
 DESCRIPTION
 -----------
@@ -127,9 +124,9 @@ FILES
   The system wide configuration file.   
 
 
-ORIGINAL AUTHOR
+AUTHOR
 ------
-The original Green source code may be downloaded from <http://github.com/schandinat/green/>.   
+The Green source code may be downloaded from <http://github.com/schandinat/green/>.   
 Green is Licensed under GNU GPL version 3.  
 This man page was written for the Debian GNU / Linux System by Oz Nahum <nahumoz@gmail.com>.
 
