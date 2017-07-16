@@ -85,7 +85,7 @@ const char	*help_text =
 "    -height=<height>            to specify the window height (in pixels)\n"
 "    -fit=<type>                 how to fit the page on screen (width, height, page or none)\n"
 "    -zoomstep=<fraction>        to specify zooming step (e.g. 1/8)\n"
-"    -step=<fraction>            to specify scrolling step (e.g. 1/8\n"
+"    -step=<fraction>            to specify scrolling step (e.g. 1/8)\n"
 "    -nomouse                    disable mouse\n"
 "    -help                       shows this help\n"
 "    -version                    displays version information\n"
