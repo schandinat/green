@@ -1,15 +1,11 @@
 GREEN - A light weight PDF reader
 =======================================
 
-NAME
-----
-
 green - a lightweight PDF reader for the Framebuffer using libpoppler
 
-SYNOPSIS
---------
+This is a slightly modified version.  
+original version: [schandinat/green](https://github.com/schandinat/green)
 
-`green` [`options`] <`PDF file 1`> *[PDF file 2]* ...
 
 DESCRIPTION
 -----------
@@ -29,37 +25,43 @@ MATE.
  - goto page
  - search function
  - scheme support
+ 
+ 
+SYNOPSIS
+--------
+
+`green [options] <PDF file 1> [PDF file 2] ...`
 
 
 OPTIONS
 -------
 
 `-fit=`
-  with one of *none, width, height* or *page* tp select the program wide page fitting mode.  
+    with one of *none, width, height* or *page* tp select the program wide page fitting mode.  
 `-width=` 
-  with an integer greate equal zero (in pixels) to specify the startup width of the window.  
+    with an integer greate equal zero (in pixels) to specify the startup width of the window.  
 `-height=` 
-  with an integer greate equal zero (in pixels) to specify the startup height of the window.  
+    with an integer greate equal zero (in pixels) to specify the startup height of the window.  
 `-fullscreen`
-  startup in fullscreen mode.  
+    startup in fullscreen mode.  
 `-nofullscreen`
-  startup in window mode.  
+    startup in window mode.  
 `-config=`
-  with a file name of a configuration file.  
+    with a file name of a configuration file.  
 `-scheme=`
-  with an `<id list>` (see below) to select a different scheme.  
+    with an `<id list>` (see below) to select a different scheme.  
 `-fit=<type>`
-  how to fit the page on screen (width, height, page or none)  
+    how to fit the page on screen (width, height, page or none)  
 `-zoomstep=<fraction>`
-  to specify zooming step (e.g. 1/8)  
+    to specify zooming step (e.g. 1/8)  
 `-step=<fraction>`
-  to specify scrolling step (e.g. 1/8)  
+    to specify scrolling step (e.g. 1/8)  
 `-nomouse`
-  disable mouse  
+    disable mouse  
 `-help`
-  shows this help  
+    shows this help  
 `-version`
-  displays version information  
+    displays version information  
   
 
 PROGRAM OPERATION
@@ -125,9 +127,9 @@ FILES
   The system wide configuration file.   
 
 
-AUTHOR
+ORIGINAL AUTHOR
 ------
-The Green source code may be downloaded from <http://github.com/schandinat/green/>.   
+The original Green source code may be downloaded from <http://github.com/schandinat/green/>.   
 Green is Licensed under GNU GPL version 3.  
 This man page was written for the Debian GNU / Linux System by Oz Nahum <nahumoz@gmail.com>.
 
