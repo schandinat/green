@@ -8,7 +8,7 @@ DESTDIR		:=
 PREFIX		:=	/usr/local
 BINDIR		:=	$(PREFIX)/bin
 SYSCONFDIR	:=	$(PREFIX)/etc
-MANDIR		:=      /usr/share/man
+MANDIR		:=	/usr/share/man
 
 CONFIG	:=	-D GREEN_SYSCONFIG_FILE=\"$(SYSCONFDIR)/green.conf\" -D GREEN_USERCONFIG_FILE=\".green.conf\"
 
@@ -17,11 +17,13 @@ POPPLER_LIBS	:=	$$(pkg-config poppler-glib --libs)
 SDL_CFLAGS	:=	$$(sdl-config --cflags)
 SDL_LIBS	:=	$$(sdl-config --libs)
 
-
 all: green
 
 clean:
 	$(RM) green main.o green.o sdl.o
+
+localinstall: green
+	$(INSTALL) green ~/.local/bin
 
 install: green
 	$(INSTALL) green $(DESTDIR)/$(BINDIR)/

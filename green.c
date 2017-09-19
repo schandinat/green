@@ -20,6 +20,8 @@
 #include <string.h>
 #include "green.h"
 
+void Green_GIO_AddWatch(Green_Document*);
+
 
 char*	FilenameToURI( char *filename )
 {
@@ -74,18 +76,18 @@ int	Green_Open( Green_RTD *rtd, char *uri )
 	
 	if (!doc)
 		return -1;
-	
+
 	if (!strncmp( uri, "file:", 5 ))
 		doc->uri = strdup( uri );
 	else
 		doc->uri = FilenameToURI( uri );
-	
+
 	if (!doc->uri)
 	{
 		free( doc );
 		return -1;
 	}
-	
+
 	doc->doc = poppler_document_new_from_file( doc->uri, NULL, NULL );
 	if (!doc->doc)
 	{
@@ -93,7 +95,7 @@ int	Green_Open( Green_RTD *rtd, char *uri )
 		free( doc );
 		return -2;
 	}
-	
+
 	doc->page_count = poppler_document_get_n_pages( doc->doc );
 	doc->page_cur = 0;
 	doc->xoffset = 0;
@@ -107,6 +109,7 @@ int	Green_Open( Green_RTD *rtd, char *uri )
 	doc->cache.page = -1;
 	doc->cache.tscale = 0;
 	doc->cache.surface = NULL;
+    Green_GIO_AddWatch(doc);
 	for (i = 0; i < rtd->doc_count; i++)
 	{
 		if (rtd->docs[i])
