@@ -904,7 +904,7 @@ int	main( int argc, char *argv[] )
 	rtd.c_highlight.b = 0x80;
 	rtd.c_highlight.a = 0x80;
 	rtd.fit_method = NATURAL;
-	rtd.step = 1;
+	rtd.step = 0.3;
 	rtd.zoomstep = 1.1;
 	rtd.bb = 0x04;
 	rtd.mouse.flags = 1;

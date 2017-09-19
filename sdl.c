@@ -15,6 +15,7 @@
  */
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <SDL.h>
 #include "green.h"
 
@@ -554,6 +555,45 @@ Uint32	live_timer( Uint32 interval, void *param )
 	return interval;
 }
 
+void Green_GIO_Callback(GFileMonitor        *monitor,
+                        GFile               *file,
+                        GFile               *other_file,
+                        GFileMonitorEvent   event_type,
+                        Green_Document      *pdoc)
+{
+	SDL_Event	event;
+    fprintf(stderr, "Receiving GIO callback\n");
+    usleep(1000000);
+
+    g_object_unref( G_OBJECT (pdoc->doc));
+    fprintf(stderr, "Updating %s\n", pdoc->uri);
+    pdoc->doc = poppler_document_new_from_file( pdoc->uri, NULL, NULL );
+    if(pdoc->doc == NULL) { fprintf(stderr, "Failed to reopen %s\n", pdoc->uri); }
+    pdoc->page_count = poppler_document_get_n_pages( pdoc->doc );
+    if(pdoc->page_cur >= pdoc->page_count) { pdoc->page_cur = pdoc->page_count - 1; }
+    pdoc->cache.page = -1;
+	
+	event.type = SDL_USEREVENT + 1;
+	SDL_PushEvent( &event );
+}
+
+void Green_GIO_AddWatch(Green_Document *doc)
+{
+    doc->file = g_file_new_for_uri(doc->uri);
+    doc->monitor = g_file_monitor_file(doc->file, G_FILE_MONITOR_NONE, NULL, NULL);
+    g_signal_connect(doc->monitor, "changed", G_CALLBACK(Green_GIO_Callback), doc);
+
+    fprintf(stderr, "Watching %s from %llx\n", doc->uri, doc->monitor);
+}
+
+void* Green_GLibLoop_Proc(void* _)
+{
+    GMainLoop *loop;
+    (void)_;
+    loop = g_main_loop_new (NULL, FALSE);
+    g_main_loop_run (loop);
+}
+
 int	Green_SDL_Main( Green_RTD *rtd )
 {
 	SDL_TimerID	timer = NULL;
@@ -590,12 +630,14 @@ int	Green_SDL_Main( Green_RTD *rtd )
 		fprintf( stderr, "Palettes are not supported!\n" );
                 return 3;
 	}
-	
+
 	timer = SDL_AddTimer( live_interval, live_timer, NULL );
 	mouse_last = SDL_GetTicks();
 	if (!rtd->mouse.visibility)
 		SDL_ShowCursor( SDL_DISABLE );
-	
+
+    g_thread_new(NULL, Green_GLibLoop_Proc, NULL);
+
 	do
 	{
 		if (flags&FLAG_RENDER)
@@ -844,6 +886,9 @@ int	Green_SDL_Main( Green_RTD *rtd )
 					}
 					
 					break;
+                case SDL_USEREVENT + 1:
+                    Render(rtd);
+                    break;
 			}
 			
 			event_count++;

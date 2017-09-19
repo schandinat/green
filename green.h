@@ -20,6 +20,7 @@
 
 #include <stdbool.h>
 #include "glib/poppler.h"
+#include <gio/gio.h>
 
 
 #define GREEN_FULLSCREEN	0x0001
@@ -49,6 +50,8 @@ typedef struct
 {
 	PopplerDocument	*doc;
 	char	*uri;
+    GFile   *file;
+    GFileMonitor    *monitor;
 	int	page_count, page_cur,
 		xoffset, yoffset;
 	bool	mirrored;	// is the document mirrored horizontally?
