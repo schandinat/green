@@ -79,7 +79,6 @@ void	GetInput( IBuffer *input, SDL_Event *event )
 		case '-':
 		case '*':
 		case '/':
-		case '=':
 		case '_':
 		case '.':
 		case ':':
@@ -492,6 +491,8 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			state = ROTATE;
 			break;
 		case '+':
+		case '=': /* Is what actually gets returned when you push '+' */
+		case SDLK_KP_PLUS:
 			if (!doc)
 				break;
 			
@@ -499,6 +500,7 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			*flags |= FLAG_RENDER;
 			break;
 		case '-':
+		case SDLK_KP_MINUS:
 			if (!doc)
 				break;
 			
