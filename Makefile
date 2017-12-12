@@ -26,6 +26,7 @@ clean:
 main.o: help.h
 help.h: help.pdf
 	sed	-e '1 i \char helpdoc[] = "help:" '	\
+		-e 's,%\xca\xc9\xca\xcb,%\\xca\\xc9\\xca\\xcb,'	\
 		-e 's,.*,"&\\n",'			\
 		-e 's,%,%%,g'				\
 		-e '$$ a \\;'				\
