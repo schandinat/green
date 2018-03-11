@@ -24,26 +24,39 @@
 char*	FilenameToURI( char *filename )
 {
 	const char	*prefix = "file:";
+	int	i, j;
 	char	abs = filename[0] == '/',
+		*esc = malloc( strlen(filename) * 3 + 1 ),
 		*wd = abs ? NULL : getcwd( NULL, 0 ),
-		*uri = malloc( strlen( prefix ) + strlen( filename ) + 1
+		*uri = malloc( strlen( prefix ) + strlen( filename ) * 3 + 1
 			+ (abs ? 0 : strlen( wd ) + 1) );
 	
 	if (!uri || !(abs || wd))
 	{
 		free( uri );
 		free( wd );
+		free( esc );
 		return NULL;
 	}
+
+	for (i = 0, j = 0; filename[i] != '\0'; i++)
+		if (filename[i] != '%')
+			esc[j++] = filename[i];
+		else {
+			sprintf( esc + j, "%%%02X", filename[i] );
+			j += 3;
+		}
+	esc[j] = '\0';
 	
 	if (abs)
-		sprintf( uri, "%s%s", prefix, filename ); 
+		sprintf( uri, "%s%s", prefix, esc ); 
 	else
 	{
-		sprintf( uri, "%s%s/%s", prefix, wd, filename );
+		sprintf( uri, "%s%s/%s", prefix, wd, esc);
 		free( wd );
 	}
-	
+
+	free( esc );
 	return uri;
 }
 
