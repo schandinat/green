@@ -23,6 +23,7 @@
 
 
 #define GREEN_FULLSCREEN	0x0001
+#define GREEN_ALTVT		0x0010
 
 
 typedef enum
@@ -41,6 +42,7 @@ typedef struct
 {
 	int	page;
 	double	tscale;
+	int	rotation;
 	cairo_surface_t	*surface;
 	
 }	Green_PageBuffer;
@@ -58,7 +60,9 @@ typedef struct
 		// 2: rotated right by 180°
 		// 3: rotated right by 270°
 	Green_FitMethod	fit_method;
+	double	pixelheight;
 	double	finescale;
+	int	palettehack;
 	char	*search_str;
 	unsigned char	bb;
 	Green_PageBuffer	cache;
@@ -69,10 +73,12 @@ typedef struct
 {
 	unsigned short	flags, width, height;
 	Green_Document	**docs;
-	int	doc_count, doc_cur;
+	int	doc_count, doc_cur, doc_help, doc_last;
 	Green_RGBA	c_background, c_highlight;
 	Green_FitMethod	fit_method;
 	double	step, zoomstep;
+	double	pixelheight;
+	int	palettehack;
 	unsigned char	bb;
 	
 	struct
@@ -107,7 +113,7 @@ int	Green_IsDocValid( Green_RTD *rtd, int id )
 }
 
 inline static
-void	Green_GetDimension( PopplerPage *page, int *w, int *h, double tscale, bool rotated )
+void	Green_GetDimension( PopplerPage *page, int *w, int *h, double tscale, double pixelheight, bool rotated )
 {
 	double	pwidth, pheight;
 	
@@ -115,12 +121,12 @@ void	Green_GetDimension( PopplerPage *page, int *w, int *h, double tscale, bool 
 	if (rotated)
 	{
 		*w = pheight * tscale;
-		*h = pwidth * tscale;
+		*h = pwidth * tscale / pixelheight;
 	}
 	else
 	{
 		*w = pwidth * tscale;
-		*h = pheight * tscale;
+		*h = pheight * tscale / pixelheight;
 	}
 	
 	return;
@@ -151,11 +157,12 @@ inline static
 void	Green_NextVaildDoc( Green_RTD *rtd )
 {
 	int i;
+	int num = rtd->doc_help == -1 ? rtd->doc_count : rtd->doc_count - 1;
 	
-	for (i = 1; i < rtd->doc_count; i++)
-		if (rtd->docs[(rtd->doc_cur+i)%rtd->doc_count])
+	for (i = 1; i < num; i++)
+		if (rtd->docs[(rtd->doc_cur+i)%num])
 		{
-			rtd->doc_cur = (rtd->doc_cur + i) % rtd->doc_count;
+			rtd->doc_cur = (rtd->doc_cur + i) % num;
 			break;
 		}
 	

@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "green.h"
+#include "help.h"
 
 
 #define SCHEME_WIDTH			 1
@@ -30,6 +31,11 @@
 #define SCHEME_HIGHLIGHTCOLOR		 7
 #define SCHEME_HIGHLIGHTALPHA		 8
 #define SCHEME_CURSORBORDER		 9
+#define SCHEME_PIXELHEIGHT		10
+#define SCHEME_MOUSEFLAGS		11
+#define SCHEME_PALETTEHACK		12
+#define SCHEME_ALTVT			13
+#define SCHEME_STEP			14
 
 #define RGB_TEXT "/usr/share/X11/rgb.txt"
 
@@ -63,8 +69,13 @@ struct SchemeProperty	scheme_property[] =
 	{"Height", SCHEME_HEIGHT, 0},
 	{"Fullscreen", SCHEME_FULLSCREEN, 0},
 	{"Fit", SCHEME_FIT, 0},
+	{"Step", SCHEME_STEP, 0},
+	{"Pixelheight", SCHEME_PIXELHEIGHT, 0},
 	{"Cursor.Visibility", SCHEME_CURSORVISIBILITY, 0},
 	{"Cursor.Border", SCHEME_CURSORBORDER, 0},
+	{"Palettehack", SCHEME_PALETTEHACK, 0},
+	{"Altvt", SCHEME_ALTVT, 0},
+	{"Mouse", SCHEME_MOUSEFLAGS, 0},
 	{"Background.Color", SCHEME_BACKGROUNDCOLOR, 0},
 	{"Highlight.Color", SCHEME_HIGHLIGHTCOLOR, 0},
 	{"Highlight.Alpha", SCHEME_HIGHLIGHTALPHA, 0}
@@ -81,6 +92,10 @@ const char	*help_text =
 "    -no-fullscreen              to startup in window mode\n"
 "    -width=<width>              to specify the window width (in pixels)\n"
 "    -height=<height>            to specify the window height (in pixels)\n"
+"    -pixeleheight=<prop>        height of pixel in proprtion to its width\n"
+"    -palettehack                hack for speed on palette displays\n"
+"    -altvt                      allow switching vt by alt- and alt+\n"
+"    -nomouse                    disable mouse\n"
 "    -help                       shows this help\n"
 "    -version                    displays version information\n"
 "\n"
@@ -395,6 +410,46 @@ int	EvalProperty( Green_RTD *rtd, int id, char *arg )
 			else
 				res = -1;
 			
+			break;
+		case SCHEME_STEP:
+			tmpd = ReadFraction( arg );
+			if (tmpd <= 0 || tmpd > 1)
+				res = -1;
+			else
+				rtd->step = tmpd;
+			break;
+		case SCHEME_PIXELHEIGHT:
+			tmpd = strtod( arg, &tmpc );
+			if (*tmpc || tmpd < 0)
+				res = -1;
+			else
+				rtd->pixelheight = tmpd;
+
+			break;
+		case SCHEME_PALETTEHACK:
+			tmpl = strtol( arg, &tmpc, 10 );
+			if (*tmpc || tmpl < 0 || tmpl > 1)
+				res = -1;
+			else
+				rtd->palettehack = tmpl;
+
+			break;
+		case SCHEME_MOUSEFLAGS:
+			tmpl = strtol( arg, &tmpc, 10 );
+			if (*tmpc || tmpl < 0)
+				res = -1;
+			else
+				rtd->mouse.flags = tmpl;
+
+			break;
+		case SCHEME_ALTVT:
+			if (!strcasecmp( arg, "yes" ))
+				rtd->flags |= GREEN_ALTVT;
+			else if (!strcasecmp( arg, "no" ))
+				rtd->flags &= ~GREEN_ALTVT;
+			else
+				res = -1;
+
 			break;
 		case SCHEME_CURSORVISIBILITY:
 			tmpl = strtol( arg, &tmpc, 10 );
@@ -888,6 +943,7 @@ int	main( int argc, char *argv[] )
 	struct SchemeArray	schemes;
 	char	*opt, *config_file = NULL, *default_scheme = NULL, *current_scheme = NULL;
 	int i, err = 0;
+	char c;
 	
 	rtd.flags = 0;
 	rtd.width = 0;
@@ -895,6 +951,8 @@ int	main( int argc, char *argv[] )
 	rtd.docs = NULL;
 	rtd.doc_count = 0;
 	rtd.doc_cur = 0;
+	rtd.doc_help = 0;
+	rtd.doc_last = -1;
 	rtd.c_background.r = 0x30;
 	rtd.c_background.g = 0xD0;
 	rtd.c_background.b = 0x30;
@@ -906,14 +964,18 @@ int	main( int argc, char *argv[] )
 	rtd.fit_method = NATURAL;
 	rtd.step = 1;
 	rtd.zoomstep = 1.1;
+	rtd.pixelheight = 1.0;
+	rtd.palettehack = 0;
 	rtd.bb = 0x04;
-	rtd.mouse.flags = 1;
+	rtd.mouse.flags = 0x01;
 	rtd.mouse.visibility = 500;
 	rtd.mouse.border_size = 0;
 	rtd.mouse.border_speed = 1;
 	schemes.scheme = NULL;
 	schemes.n = 0;
-	g_type_init();
+#if !GLIB_CHECK_VERSION(2,35,0)
+ 	g_type_init();
+#endif
 	
 	for (i = 1; i < argc; i++)
 	{
@@ -1064,6 +1126,18 @@ int	main( int argc, char *argv[] )
 			if (*opt)
 				err = -1;
 		}
+		else if (!strncmp( opt, "pixelheight=", 12 ))
+		{
+			opt += 12;
+			if (1 != sscanf(opt, "%lf%c", &rtd.pixelheight, &c))
+				err = -1;
+		}
+		else if (!strcmp( opt, "palettehack"))
+			rtd.palettehack = 1;
+		else if (!strcmp( opt, "nomouse"))
+			rtd.mouse.flags = 0;
+		else if (!strcmp( opt, "altvt"))
+			rtd.flags |= GREEN_ALTVT;
 		else if (!strcmp( opt, "fullscreen" ))
 			rtd.flags |= GREEN_FULLSCREEN;
 		else if (!strcmp( opt, "no-fullscreen" ))
@@ -1090,6 +1164,11 @@ int	main( int argc, char *argv[] )
 			continue;
 		}
 	}
+
+	if (Green_Open( &rtd, helpdoc ) < 0)
+		rtd.doc_help = -1;
+	else
+		rtd.doc_help = rtd.doc_count - 1;
 	
 	return Green_SDL_Main( &rtd );
 }

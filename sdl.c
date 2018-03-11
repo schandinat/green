@@ -15,6 +15,13 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/vt.h>
+#include <linux/tty.h>
+#include <linux/kd.h>
 #include <SDL.h>
 #include "green.h"
 
@@ -113,6 +120,25 @@ void	GetInput( IBuffer *input, SDL_Event *event )
 	return;
 }
 
+void	CopyPixel( Uint32 *dst, Uint8 red, Uint8 green, Uint8 blue, SDL_PixelFormat *fmt )
+{
+	Uint32 tdst;
+
+	tdst = SDL_MapRGB(fmt, red, green, blue);
+
+	switch(fmt->BitsPerPixel) {
+	case 8:
+		* (Uint8 *) dst = tdst & 0xFF;
+		break;
+	case 16:
+		* (Uint16 *) dst = tdst & 0xFFFF;
+		break;
+	case 32:
+		*dst = tdst;
+		break;
+	}
+}
+
 void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage *page, double tscale )
 {
 	PopplerRectangle	*rect;
@@ -128,20 +154,38 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 	guint	i, n;
 	GList	*list = NULL;
 	Uint32	*src, *dst;
+	int	red, green, blue;
 	int	x, y, rowstride, w, h, dir_x, dir_y;
+
+	if (doc->palettehack && fmt.palette && fmt.BitsPerPixel == 8) {
+		/* palette hack; wrong in general, but fast;
+		   works with the palette as initialized by SDL */
+		fmt.Rloss = 5;
+		fmt.Gloss = 5;
+		fmt.Bloss = 6;
+		fmt.Rshift = 5;
+		fmt.Gshift = 2;
+		fmt.Bshift = 0;
+		fmt.palette = NULL;
+	}
 
 	if (doc->search_str)
 		list = poppler_page_find_text( page, doc->search_str );
 
-	if (doc->cache.surface && doc->cache.page == doc->page_cur && doc->cache.tscale == tscale)
+	if (doc->cache.surface && doc->cache.page == doc->page_cur && doc->cache.tscale == tscale && doc->cache.rotation == doc->rotation)
 		surface = doc->cache.surface;
 	else
 	{
-		Green_GetDimension( page, &w, &h, tscale, false );
-		surface = cairo_image_surface_create( CAIRO_FORMAT_ARGB32, w, h );
+		Green_GetDimension( page, &w, &h, tscale, doc->pixelheight, false );
+		if (doc->rotation % 2)
+			h *= doc->pixelheight + 1;
+		surface = cairo_image_surface_create( CAIRO_FORMAT_ARGB32, w, h);
 		context = cairo_create( surface );
 		cairo_save( context );
-		cairo_scale( context, tscale, tscale );
+		if (doc->rotation % 2)
+			cairo_scale( context, tscale / doc->pixelheight, tscale );
+		else
+			cairo_scale( context, tscale, tscale / doc->pixelheight );
 		poppler_page_render( page, context );
 		cairo_restore( context );
 		cairo_set_operator( context, CAIRO_OPERATOR_DEST_OVER );
@@ -154,6 +198,7 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 		doc->cache.surface = surface;
 		doc->cache.page = doc->page_cur;
 		doc->cache.tscale = tscale;
+		doc->cache.rotation = doc->rotation;
 	}
 
 	if (doc->rotation == 1)
@@ -189,10 +234,12 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 				+ dest.x * fmt.BytesPerPixel;
 			for (x = 0; x < dest.w; x++)
 			{
-				*dst = ((((*src>>16)&0xFF)>>fmt.Rloss)<<fmt.Rshift)
-					| ((((*src>>8)&0xFF)>>fmt.Gloss)<<fmt.Gshift)
-					| (((*src&0xFF)>>fmt.Bloss)<<fmt.Bshift);
-				
+				red = (*src>>16)&0xFF;
+				green = (*src>>8)&0xFF;
+				blue = *src&0xFF;
+
+				CopyPixel(dst, red, green, blue, &fmt);
+
 				src = (void*)src + dir_x * rowstride;
 				dst = (void*)dst + fmt.BytesPerPixel;
 			}
@@ -207,9 +254,11 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 				+ dest.x * fmt.BytesPerPixel;
 			for (x = 0; x < dest.w; x++)
 			{
-				*dst = ((((*src>>16)&0xFF)>>fmt.Rloss)<<fmt.Rshift)
-					| ((((*src>>8)&0xFF)>>fmt.Gloss)<<fmt.Gshift)
-					| (((*src&0xFF)>>fmt.Bloss)<<fmt.Bshift);
+				red = (*src>>16)&0xFF;
+				green = (*src>>8)&0xFF;
+				blue = *src&0xFF;
+
+				CopyPixel(dst, red, green, blue, &fmt);
 				
 				src += dir_x;
 				dst = (void*)dst + fmt.BytesPerPixel;
@@ -235,10 +284,10 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 			rect->y1 *= tscale;
 			rect->x2 *= tscale;
 			rect->y2 *= tscale;
-			rect->x1 -= xoff;
-			rect->y1 -= yoff;
-			rect->x2 -= xoff;
-			rect->y2 -= yoff;
+			rect->x1 -= xoff * (doc->rotation%2?doc->pixelheight:1);
+			rect->y1 -= yoff * (doc->rotation%2?1:doc->pixelheight);
+			rect->x2 -= xoff * (doc->rotation%2?doc->pixelheight:1);
+			rect->y2 -= yoff * (doc->rotation%2?1:doc->pixelheight);
 			if (doc->rotation % 2)
 			{
 				tmp_d = rect->x1;
@@ -248,6 +297,8 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 				rect->x2 = rect->y2;
 				rect->y2 = tmp_d;
 			}
+			rect->y1 /= doc->pixelheight;
+			rect->y2 /= doc->pixelheight;
 
 			if (doc->mirrored)
 			{
@@ -307,9 +358,11 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 						+ (dest.x + (int)rect->x1) * fmt.BytesPerPixel;
 					for (x = rect->x1; x < (int)rect->x2; x++)
 					{
-						*dst = ((((((*src>>16)&0xFF) * ia + ar) / 256)>>fmt.Rloss)<<fmt.Rshift)
-							| ((((((*src>>8)&0xFF) * ia + ag) / 256)>>fmt.Gloss)<<fmt.Gshift)
-							| (((((*src&0xFF) * ia + ab) / 256)>>fmt.Bloss)<<fmt.Bshift);
+						red = (((*src>>16)&0xFF) * ia + ar) / 256;
+						green = (((*src>>8)&0xFF) * ia + ag) / 256;
+						blue = (((*src)&0xFF) * ia + ab) / 256;
+
+						CopyPixel(dst, red, green, blue, &fmt);
 						
 						src = (void*)src + dir_x * rowstride;
 						dst = (void*)dst + fmt.BytesPerPixel;
@@ -325,10 +378,12 @@ void	RenderPage( Green_RTD *rtd, SDL_Rect dest, int xoff, int yoff, PopplerPage 
 						+ (dest.x + (int)rect->x1) * fmt.BytesPerPixel;
 					for (x = rect->x1; x < (int)rect->x2; x++)
 					{
-						*dst = ((((((*src>>16)&0xFF) * ia + ar) / 256)>>fmt.Rloss)<<fmt.Rshift)
-							| ((((((*src>>8)&0xFF) * ia + ag) / 256)>>fmt.Gloss)<<fmt.Gshift)
-							| (((((*src&0xFF) * ia + ab) / 256)>>fmt.Bloss)<<fmt.Bshift);
-						
+						red = (((*src>>16)&0xFF) * ia + ar) / 256;
+						green = (((*src>>8)&0xFF) * ia + ag) / 256;
+						blue = (((*src)&0xFF) * ia + ab) / 256;
+
+						CopyPixel(dst, red, green, blue, &fmt);
+
 						src += dir_x;
 						dst = (void*)dst + fmt.BytesPerPixel;
 					}
@@ -365,7 +420,7 @@ void	Render( Green_RTD *rtd )
 	doc = rtd->docs[rtd->doc_cur];
 	tscale = Green_Fit( doc, display->w, display->h ) * doc->finescale;
 	page = poppler_document_get_page( doc->doc, doc->page_cur );
-	Green_GetDimension( page, &w, &h, tscale, doc->rotation % 2 );
+	Green_GetDimension( page, &w, &h, tscale, doc->pixelheight, doc->rotation % 2 );
 	rect.w = w > display->w ? display->w : w;
 	rect.h = h > display->h ? display->h : h;
 	rect.x = (display->w - rect.w) / 2;
@@ -376,31 +431,104 @@ void	Render( Green_RTD *rtd )
 	return;
 }
 
+/*
+ * switch from active console to next/previous (if increase=1/-1)
+ * wait for coming back, so that we can re-render
+ */
+
+int inc_console(int increase) {
+	int tty;
+	int res;
+	struct vt_stat st;
+	int current;
+	int i, step;
+
+	// printf("inc_console(%d)\n", increase);
+
+	tty = open("/dev/tty", O_RDONLY);
+	if (tty == -1) {
+		perror("/dev/tty");
+		return -1;
+	}
+
+			/* find map and the currently active vt */
+
+	res = ioctl(tty, VT_GETSTATE, &st);
+	if (res) {
+		perror("ioctl");
+		return -1;
+	}
+
+			/* find next used vt */
+
+	current = st.v_active;
+	step = increase > 0 ? 1 : -1;
+	for(i = current + increase; i != current; i += step) {
+
+			/* rotation of consoles */
+
+		if (i > MAX_NR_CONSOLES)
+			i = 1;
+		if (i < 1)
+			i = MAX_NR_CONSOLES;
+
+			/* map only covers the first 15 consoles */
+
+		if (i < 8 * sizeof(st.v_state)) {
+			if ((st.v_state >> i) & 0x01) {
+				// printf("switching to %d\n", i);
+				ioctl(tty, KDSETMODE, 0);
+				res = ioctl(tty, VT_ACTIVATE, i);
+				if (res == 0)
+					ioctl(tty, VT_WAITACTIVE, i);
+				ioctl(tty, VT_WAITACTIVE, current);
+				ioctl(tty, KDSETMODE, 1);
+				break;
+			}
+		}
+
+			/* trick to check if the other consoles are used */
+
+		else {
+			if (ioctl(tty, VT_DISALLOCATE, i)) {
+				// printf("switching to %d\n", i);
+				ioctl(tty, KDSETMODE, 0);
+				res = ioctl(tty, VT_ACTIVATE, i);
+				if (res == 0)
+					ioctl(tty, VT_WAITACTIVE, i);
+				ioctl(tty, VT_WAITACTIVE, current);
+				ioctl(tty, KDSETMODE, 1);
+				break;
+			}
+		}
+	}
+
+	close(tty);
+	return 0;
+}
+
 RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 {
 	Green_Document	*doc = NULL;
 	SDL_Surface	*display = SDL_GetVideoSurface();
 	RState	state = NORMAL;
 	int	f = 0;
+	PopplerPage	*page;
+	int	w, h, scrollx, scrolly;
 	
 	if (Green_IsDocValid( rtd, rtd->doc_cur ))
 		doc = rtd->docs[rtd->doc_cur];
-	
-	switch (event->key.keysym.sym)
-	{
-		case 'q':
-			*flags |= FLAG_QUIT;
-			break;
+
+	switch (event->key.keysym.unicode) {
 		case 'c':
 			Green_Close( rtd, rtd->doc_cur );
 			*flags |= FLAG_RENDER;
 			break;
+		case 'q':
+			*flags |= FLAG_QUIT;
+			break;
 		case 'g':
 			state = GOTO;
-			break;
-		case SDLK_s:
-			/* type s-SEARCHSTRING-<Enter> to search string */
-			state = SEARCH;
 			break;
 		case 'n':
 			if (!doc || !doc->search_str)
@@ -412,6 +540,72 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 		case 'f':
 			state = FIT;
 			break;
+		case '+':
+			if (!doc)
+				break;
+			
+			Green_Zoom( doc, display->w,display->h, doc->finescale * rtd->zoomstep );
+			*flags |= FLAG_RENDER;
+			break;
+		case '-':
+			if (!doc)
+				break;
+			
+			Green_Zoom( doc, display->w,display->h, doc->finescale / rtd->zoomstep );
+			*flags |= FLAG_RENDER;
+			break;
+		case 's':
+		case '/':
+			/* type s-SEARCHSTRING-<Enter> to search string */
+			state = SEARCH;
+			break;
+		case '.':
+			if (!doc)
+				break;
+
+			doc->xoffset = 0;
+			doc->yoffset = 0;
+
+			page = poppler_document_get_page( doc->doc, doc->page_cur );
+			Green_GetDimension ( page, &w, &h, doc->cache.tscale, doc->pixelheight, doc->rotation % 2 );
+			g_object_unref( G_OBJECT( page ) );
+
+			scrollx = (w - display->w) / 2;
+			scrollx *= (doc->rotation % 3) ? -1 : 1;
+			scrolly= (h - display->h) / 2;
+			scrolly *= (doc->rotation > 1) ? -1 : 1;
+
+			Green_ScrollRelative( doc, scrollx, scrolly, display->w, display->h, 0 );
+			*flags |= FLAG_RENDER;
+			break;
+		case 'H':
+		case '?':
+			if ( rtd->doc_help < 0 )
+				break;
+
+			if (rtd->doc_help == 0) {
+				*flags |= FLAG_QUIT;
+				break;
+			}
+
+			if (rtd->doc_last == -1) {
+				rtd->doc_last = rtd->doc_cur;
+				rtd->doc_cur = rtd->doc_help;
+			}
+			else {
+				f = rtd->doc_last;
+				if (!Green_IsDocValid( rtd, f ))
+					break;
+				rtd->doc_cur = f;
+				rtd->doc_last = -1;
+			}
+
+			*flags |= FLAG_RENDER;
+			break;
+	}
+
+	switch (event->key.keysym.sym)
+	{
 		case SDLK_UP:
 			if (!doc)
 				break;
@@ -440,6 +634,13 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_LEFT:
+			if ((rtd->flags & GREEN_ALTVT) &&
+			    (event->key.keysym.mod == KMOD_LALT ||
+			     event->key.keysym.mod == KMOD_RALT)) {
+				inc_console(-1);
+				*flags |= FLAG_RENDER;
+				break;
+			}
 			if (!doc)
 				break;
 			
@@ -460,7 +661,14 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			Green_ScrollRelative( doc, display->w * rtd->step, 0, display->w, display->h, 1 );
 			*flags |= FLAG_RENDER;
 			break;
-		case SDLK_RIGHT:
+ 		case SDLK_RIGHT:
+			if ((rtd->flags & GREEN_ALTVT) &&
+			    (event->key.keysym.mod == KMOD_LALT ||
+			     event->key.keysym.mod == KMOD_RALT)) {
+				inc_console(1);
+				*flags |= FLAG_RENDER;
+				break;
+			}
 			if (!doc)
 				break;
 			
@@ -491,20 +699,6 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 			
 			state = ROTATE;
 			break;
-		case '+':
-			if (!doc)
-				break;
-			
-			Green_Zoom( doc, display->w,display->h, doc->finescale * rtd->zoomstep );
-			*flags |= FLAG_RENDER;
-			break;
-		case '-':
-			if (!doc)
-				break;
-			
-			Green_Zoom( doc, display->w,display->h, doc->finescale / rtd->zoomstep );
-			*flags |= FLAG_RENDER;
-			break;
 		case SDLK_F12:
 			f++;
 		case SDLK_F11:
@@ -528,13 +722,19 @@ RState	NormalInput( Green_RTD *rtd, SDL_Event *event, unsigned short *flags )
 		case SDLK_F2:
 			f++;
 		case SDLK_F1:
+			if (rtd->doc_last >= 0)
+				break;
 			if (!Green_IsDocValid( rtd, f ))
 				break;
-			
+			if ( f == rtd->doc_help )
+				break;
+
 			rtd->doc_cur = f;
 			*flags |= FLAG_RENDER;
 			break;
 		case SDLK_TAB:
+			if (rtd->doc_last >= 0)
+				break;
 			Green_NextVaildDoc( rtd );
 			*flags |= FLAG_RENDER;
 			break;
@@ -569,12 +769,22 @@ int	Green_SDL_Main( Green_RTD *rtd )
 	long	tmp;
 	int	x, y, width, height;
 	
-	if (SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER ))
+	if (!(rtd->mouse.flags & 0x01))
+		setenv("SDL_NOMOUSE", "1", 1);
+
+	if (SDL_Init( SDL_INIT_VIDEO |
+	    (!(rtd->mouse.flags & 0x01) ? 0 : SDL_INIT_TIMER )))
 	{
 		fprintf( stderr, "SDL_Init failed: %s\n", SDL_GetError() );
+		if (!strcmp(SDL_GetError(), "Unable to open mouse")) {
+			printf("run with -nomouse or ");
+			printf("add Mouse=0 to conf file\n");
+		}
 		return 1;
 	}
-	
+
+	SDL_EnableUNICODE(1);
+
 	SDL_WM_SetCaption( "green - the PDF reader", NULL );
 	display = SDL_SetVideoMode( rtd->width, rtd->height, 0, SDL_SWSURFACE | SDL_ANYFORMAT | SDL_RESIZABLE | (rtd->flags&GREEN_FULLSCREEN ? SDL_FULLSCREEN : 0) );
 	if (!display)
@@ -584,17 +794,10 @@ int	Green_SDL_Main( Green_RTD *rtd )
 		return 2;
 	}
 	
-	if (display->format->palette)
-	{
-		SDL_Quit();
-		fprintf( stderr, "Palettes are not supported!\n" );
-                return 3;
-	}
-	
 	timer = SDL_AddTimer( live_interval, live_timer, NULL );
 	mouse_last = SDL_GetTicks();
-	if (!rtd->mouse.visibility)
-		SDL_ShowCursor( SDL_DISABLE );
+	if (!rtd->mouse.visibility || !(rtd->mouse.flags & 0x01))
+ 		SDL_ShowCursor( SDL_DISABLE );
 	
 	do
 	{
